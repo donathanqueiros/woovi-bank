@@ -8,15 +8,18 @@
   "main": "index.ts",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
+    "dev": "nodemon --watch src --ext ts --exec \"tsx\" src/index.ts",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "koa": "^3.1.2"
+    "dotenv-safe": "^9.1.0",
+    "koa": "^3.1.2",
+    "mongoose": "^9.3.1"
   },
   "devDependencies": {
+    "@types/dotenv-safe": "^9.1.0",
     "@types/jest": "^30.0.0",
     "@types/koa": "^3.0.2",
     "@types/node": "^22.15.3",
@@ -24,6 +27,7 @@
     "nodemon": "^3.1.14",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

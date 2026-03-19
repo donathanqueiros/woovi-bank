@@ -1,9 +1,15 @@
-import Koa from "koa";
+import { config } from "./config";
+import { connectDatabase } from "./database";
+import { app } from "./server/app";
+import http from "http";
 
-const app = new Koa();
+(async () => {
+  await connectDatabase();
 
-app.use(async (ctx) => {
-  ctx.body = "Hello World";
-});
+  const server = http.createServer(app.callback());
 
-app.listen(4000);
+  server.listen(config.PORT, () => {
+    // eslint-disable-next-line
+    console.log(`Server running on port:${config.PORT}`);
+  });
+})();
