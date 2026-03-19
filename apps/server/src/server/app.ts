@@ -6,10 +6,33 @@ import cors from "@koa/cors";
 import logger from "koa-logger";
 import { config } from "../config";
 import { findValidSession } from "../modules/sessions/sessionService";
+import type { GraphQLContext } from "../types/auth";
 
 const app = new Koa();
 
 app.keys = [config.SESSION_SECRET];
+
+export async function getAuthContextFromSessionToken(
+	sessionToken: string | undefined,
+): Promise<GraphQLContext> {
+	if (!sessionToken) {
+		return {};
+	}
+
+	const validSession = await findValidSession(sessionToken);
+
+	if (!validSession) {
+		return {};
+	}
+
+	return {
+		auth: {
+			userId: validSession.userId,
+			role: validSession.role,
+		},
+		sessionToken: validSession.token,
+	};
+}
 
 app.use(
 	cors({
@@ -31,9 +54,7 @@ app.use(
 					signed: true,
 				});
 
-				const validSession = sessionToken
-					? await findValidSession(sessionToken)
-					: null;
+				const authContext = await getAuthContextFromSessionToken(sessionToken);
 
 				const requestContext = {
 					setSessionCookie: (token: string, expiresAt: Date) => {
@@ -58,18 +79,8 @@ app.use(
 					},
 				};
 
-				if (validSession) {
-					return {
-						auth: {
-							userId: validSession.userId,
-							role: validSession.role,
-						},
-						sessionToken: validSession.token,
-						requestContext,
-					};
-				}
-
 				return {
+					...authContext,
 					requestContext,
 				};
 			},

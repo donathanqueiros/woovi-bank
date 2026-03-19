@@ -2,6 +2,7 @@ import { relayEnvironment } from "@/lib/relay/environment";
 import { AuthProvider } from "@/lib/auth";
 import type { ReactNode } from "react";
 import { RelayEnvironmentProvider } from "react-relay";
+import { Toaster } from "sonner";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -12,6 +13,7 @@ export function Providers({ children }: ProvidersProps) {
     <AuthProvider>
       <RelayEnvironmentProvider environment={relayEnvironment}>
         {children}
+        <Toaster richColors position="top-right" />
       </RelayEnvironmentProvider>
     </AuthProvider>
   );

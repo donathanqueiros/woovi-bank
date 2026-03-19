@@ -14,7 +14,13 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
-import { fetchQuery, graphql, useRelayEnvironment } from "react-relay";
+import {
+  fetchQuery,
+  graphql,
+  requestSubscription,
+  useRelayEnvironment,
+} from "react-relay";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DashboardSidebar,
@@ -23,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
+import type { accountsTransferReceivedSubscription } from "./__generated__/accountsTransferReceivedSubscription.graphql";
 import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
 
 const PAGE_SIZE = 10;
@@ -34,6 +41,19 @@ const accountsPageQuery = graphql`
       id
       holderName
       balance
+      createdAt
+    }
+  }
+`;
+
+const transferReceivedSubscription = graphql`
+  subscription accountsTransferReceivedSubscription($accountId: ID!) {
+    transferReceived(accountId: $accountId) {
+      transactionId
+      fromAccountId
+      toAccountId
+      amount
+      description
       createdAt
     }
   }
@@ -261,6 +281,41 @@ export default function AccountsPage() {
   useEffect(() => {
     void loadDashboardData();
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (!user?.accountId) {
+      return;
+    }
+
+    const subscription = requestSubscription<accountsTransferReceivedSubscription>(
+      relayEnvironment,
+      {
+        subscription: transferReceivedSubscription,
+        variables: {
+          accountId: user.accountId,
+        },
+        onNext: (data) => {
+          const payload = data?.transferReceived;
+
+          if (!payload) {
+            return;
+          }
+
+          toast.success(`Voce recebeu ${formatBalance(payload.amount)}`, {
+            description: payload.description
+              ? payload.description
+              : `Transferencia em ${formatDateTime(payload.createdAt)}`,
+          });
+
+          void loadDashboardData();
+        },
+      },
+    );
+
+    return () => {
+      subscription.dispose();
+    };
+  }, [loadDashboardData, relayEnvironment, user?.accountId]);
 
   useEffect(() => {
     setAccountsPage(1);

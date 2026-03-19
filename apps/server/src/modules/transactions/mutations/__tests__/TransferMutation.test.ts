@@ -33,6 +33,12 @@ jest.mock("../../../ledger/LedgerEntryModel", () => {
   return { LedgerEntry };
 });
 
+jest.mock("../../../notifications/transferNotificationBus", () => ({
+  transferNotificationBus: {
+    publishTransferReceived: jest.fn(),
+  },
+}));
+
 import { createAccountDocument } from "../../../../__tests__/factories/createAccountDocument";
 import { createTransactionDocument } from "../../../../__tests__/factories/createTransactionDocument";
 import { executeGraphQL } from "../../../../__tests__/helpers/executeGraphQL";
@@ -40,6 +46,7 @@ import { Account } from "../../../accounts/AccountModel";
 import { Transaction } from "../../TransactionModel";
 import { IdempotencyRequest } from "../../../idempotency/IdempotencyRequestModel";
 import { LedgerEntry } from "../../../ledger/LedgerEntryModel";
+import { transferNotificationBus } from "../../../notifications/transferNotificationBus";
 import mongoose from "mongoose";
 
 const AccountModel = Account as unknown as jest.Mock & {
@@ -60,6 +67,10 @@ const IdempotencyRequestModel = IdempotencyRequest as unknown as {
 const LedgerEntryModel = LedgerEntry as unknown as {
   aggregate: jest.Mock;
   insertMany: jest.Mock;
+};
+
+const TransferNotificationBus = transferNotificationBus as unknown as {
+  publishTransferReceived: jest.Mock;
 };
 
 describe("Transfer mutation", () => {
@@ -178,6 +189,16 @@ describe("Transfer mutation", () => {
     expect(idempotencyRequestDoc.save).toHaveBeenCalledWith(
       expect.any(Object),
     );
+    expect(
+      TransferNotificationBus.publishTransferReceived,
+    ).toHaveBeenCalledWith({
+      transactionId: "transaction-1",
+      fromAccountId: "account-1",
+      toAccountId: "account-2",
+      amount: 120,
+      description: "Pagamento",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
     expect(endSession).toHaveBeenCalledTimes(1);
     expect(transaction.save).toHaveBeenCalledTimes(1);
     expect(result.data).toEqual({

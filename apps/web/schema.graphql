@@ -65,3 +65,16 @@ enum UserRole {
   USER
   ADMIN
 }
+
+type Subscription {
+  transferReceived(accountId: ID!): TransferReceived!
+}
+
+type TransferReceived {
+  transactionId: ID!
+  fromAccountId: ID!
+  toAccountId: ID!
+  amount: Float!
+  description: String
+  createdAt: String!
+}

@@ -6,6 +6,7 @@ import { Transaction } from "../TransactionModel";
 import { IdempotencyRequest } from "../../idempotency/IdempotencyRequestModel";
 import { LedgerEntry } from "../../ledger/LedgerEntryModel";
 import { getAccountBalance } from "../../ledger/balance";
+import { transferNotificationBus } from "../../notifications/transferNotificationBus";
 import type { GraphQLContext } from "../../../types/auth";
 
 export const TransferMutation = {
@@ -135,6 +136,20 @@ export const TransferMutation = {
     if (!transaction) {
       throw new Error("Falha ao criar transferencia");
     }
+
+    const persistedTransaction = transaction as {
+      id: string;
+      createdAt: Date | string;
+    };
+
+    transferNotificationBus.publishTransferReceived({
+      transactionId: String(persistedTransaction.id),
+      fromAccountId,
+      toAccountId,
+      amount,
+      ...(description ? { description } : {}),
+      createdAt: new Date(persistedTransaction.createdAt).toISOString(),
+    });
 
     return transaction;
   },
