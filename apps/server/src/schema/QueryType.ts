@@ -1,15 +1,20 @@
 import {
   GraphQLBoolean,
+  GraphQLEnumType,
   GraphQLID,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLEnumType,
   GraphQLString,
 } from "graphql";
 import { AccountType } from "../modules/accounts/AccountType";
 import { Account } from "../modules/accounts/AccountModel";
+import {
+  DepositRequestStatusType,
+  DepositRequestType,
+} from "../modules/deposits/DepositRequestType";
+import { DepositRequest } from "../modules/deposits/DepositRequestModel";
 import { TransactionType } from "../modules/transactions/TransactionType";
 import { Transaction } from "../modules/transactions/TransactionModel";
 import { User } from "../modules/users/UserModel";
@@ -172,6 +177,74 @@ export const QueryType = new GraphQLObjectType({
           : {};
 
         return await Transaction.countDocuments(query);
+      },
+    },
+
+    myDeposits: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(DepositRequestType)),
+      ),
+      args: {
+        page: { type: GraphQLInt },
+        limit: { type: GraphQLInt },
+        status: { type: DepositRequestStatusType },
+      },
+      resolve: async (
+        _source: unknown,
+        args: { page?: number; limit?: number; status?: "PENDING" | "COMPLETED" | "EXPIRED" },
+        context: GraphQLContext,
+      ) => {
+        if (!context.auth) {
+          throw new Error("Usuario nao autenticado");
+        }
+
+        const account = await Account.findOne({ userId: context.auth.userId });
+
+        if (!account) {
+          throw new Error("Conta do usuario nao encontrada");
+        }
+
+        const { limit, skip } = getPagination(args.page, args.limit);
+
+        return await DepositRequest.find(
+          {
+            accountId: account.id,
+            ...(args.status ? { status: args.status } : {}),
+          },
+          null,
+          {
+            sort: { createdAt: -1 },
+            skip,
+            limit,
+          },
+        );
+      },
+    },
+
+    myDepositsCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      args: {
+        status: { type: DepositRequestStatusType },
+      },
+      resolve: async (
+        _source: unknown,
+        args: { status?: "PENDING" | "COMPLETED" | "EXPIRED" },
+        context: GraphQLContext,
+      ) => {
+        if (!context.auth) {
+          throw new Error("Usuario nao autenticado");
+        }
+
+        const account = await Account.findOne({ userId: context.auth.userId });
+
+        if (!account) {
+          throw new Error("Conta do usuario nao encontrada");
+        }
+
+        return await DepositRequest.countDocuments({
+          accountId: account.id,
+          ...(args.status ? { status: args.status } : {}),
+        });
       },
     },
   },

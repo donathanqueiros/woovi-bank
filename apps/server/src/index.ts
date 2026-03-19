@@ -1,5 +1,6 @@
 import { config } from "./config";
 import { connectDatabase } from "./database";
+import { startJobs } from "./jobs";
 import { schema } from "./schema/schema";
 import { app, getAuthContextFromSessionToken } from "./server/app";
 import http from "http";
@@ -26,6 +27,7 @@ function readCookieValue(cookieHeader: string | undefined, key: string) {
 
 (async () => {
   await connectDatabase();
+  startJobs();
 
   const server = http.createServer(app.callback());
 

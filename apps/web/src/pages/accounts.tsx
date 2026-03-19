@@ -6,6 +6,7 @@ import {
   ArrowRightLeft,
   ArrowUpRight,
   Calendar,
+  Copy,
   DollarSign,
   Landmark,
   Loader2,
@@ -29,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
+import type { accountsDepositConfirmedSubscription } from "./__generated__/accountsDepositConfirmedSubscription.graphql";
 import type { accountsTransferReceivedSubscription } from "./__generated__/accountsTransferReceivedSubscription.graphql";
 import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
 
@@ -60,6 +62,19 @@ const transferReceivedSubscription = graphql`
   }
 `;
 
+const depositConfirmedSubscription = graphql`
+  subscription accountsDepositConfirmedSubscription($accountId: ID!) {
+    depositConfirmed(accountId: $accountId) {
+      depositId
+      accountId
+      correlationID
+      amount
+      createdAt
+      completedAt
+    }
+  }
+`;
+
 type Account = NonNullable<accountsQuery["response"]["accounts"]>[number];
 
 type TransactionsPayload = {
@@ -78,6 +93,28 @@ type TransactionsPayload = {
       holderName: string;
     };
   }>;
+};
+
+type DepositStatus = "PENDING" | "COMPLETED" | "EXPIRED";
+
+type Deposit = {
+  id: string;
+  accountId: string;
+  correlationID: string;
+  requestedAmount: number;
+  paidAmount?: number | null;
+  status: DepositStatus;
+  brCode?: string | null;
+  qrCodeImage?: string | null;
+  expiresDate?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+  expiredAt?: string | null;
+};
+
+type DepositsPayload = {
+  myDepositsCount: number;
+  myDeposits: Deposit[];
 };
 
 const TRANSACTIONS_QUERY = `
@@ -100,6 +137,26 @@ const TRANSACTIONS_QUERY = `
   }
 `;
 
+const DEPOSITS_QUERY = `
+  query Deposits($page: Int!, $limit: Int!, $status: DepositRequestStatus) {
+    myDepositsCount(status: $status)
+    myDeposits(page: $page, limit: $limit, status: $status) {
+      id
+      accountId
+      correlationID
+      requestedAmount
+      paidAmount
+      status
+      brCode
+      qrCodeImage
+      expiresDate
+      createdAt
+      completedAt
+      expiredAt
+    }
+  }
+`;
+
 const TRANSFER_MUTATION = `
   mutation Transfer($fromAccountId: String!, $toAccountId: String!, $amount: Float!, $idempotencyKey: String!, $description: String) {
     Transfer(
@@ -112,6 +169,25 @@ const TRANSFER_MUTATION = `
       id
       amount
       createdAt
+    }
+  }
+`;
+
+const CREATE_DEPOSIT_MUTATION = `
+  mutation CreateDeposit($amount: Float!, $comment: String) {
+    CreateDeposit(amount: $amount, comment: $comment) {
+      id
+      accountId
+      correlationID
+      requestedAmount
+      paidAmount
+      status
+      brCode
+      qrCodeImage
+      expiresDate
+      createdAt
+      completedAt
+      expiredAt
     }
   }
 `;
@@ -174,6 +250,12 @@ function newIdempotencyKey() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function getDepositStatusLabel(status: DepositStatus) {
+  if (status === "COMPLETED") return "Confirmado";
+  if (status === "EXPIRED") return "Expirado";
+  return "Aguardando pagamento";
+}
+
 export default function AccountsPage() {
   const relayEnvironment = useRelayEnvironment();
   const { user, logout } = useAuth();
@@ -184,6 +266,8 @@ export default function AccountsPage() {
   const [transactionsPage, setTransactionsPage] = useState(1);
   const [accountsTotalCount, setAccountsTotalCount] = useState(0);
   const [transactionsTotalCount, setTransactionsTotalCount] = useState(0);
+  const [deposits, setDeposits] = useState<Deposit[]>([]);
+  const [depositsTotalCount, setDepositsTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transferTo, setTransferTo] = useState("");
@@ -191,6 +275,9 @@ export default function AccountsPage() {
   const [transferDescription, setTransferDescription] = useState("");
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferFeedback, setTransferFeedback] = useState<string | null>(null);
+  const [depositAmount, setDepositAmount] = useState("100");
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [depositFeedback, setDepositFeedback] = useState<string | null>(null);
   const [creditAccountId, setCreditAccountId] = useState("");
   const [creditAmount, setCreditAmount] = useState("100");
   const [adminFeedback, setAdminFeedback] = useState<string | null>(null);
@@ -202,6 +289,14 @@ export default function AccountsPage() {
   const myAccount = useMemo(
     () => accounts.find((account) => account.id === user?.accountId) ?? null,
     [accounts, user?.accountId],
+  );
+
+  const latestDeposit = useMemo(
+    () =>
+      deposits
+        .slice()
+        .sort((a, b) => parseDateValue(b.createdAt) - parseDateValue(a.createdAt))[0] ?? null,
+    [deposits],
   );
 
   const sidebarItems = useMemo<SidebarItem[]>(() => {
@@ -223,6 +318,12 @@ export default function AccountsPage() {
         label: "Transferencias",
         description: "Envio de dinheiro entre contas",
         icon: SendHorizontal,
+      },
+      {
+        id: "depositos",
+        label: "Depositos Pix",
+        description: "Geracao de QR e acompanhamento",
+        icon: DollarSign,
       },
       {
         id: "perfil",
@@ -249,7 +350,7 @@ export default function AccountsPage() {
     setError(null);
 
     try {
-      const [accountsData, transactionsData] = await Promise.all([
+      const [accountsData, transactionsData, depositsData] = await Promise.all([
         fetchQuery<accountsQuery>(relayEnvironment, accountsPageQuery, {
           page: accountsPage,
           limit: PAGE_SIZE,
@@ -259,6 +360,11 @@ export default function AccountsPage() {
           limit: PAGE_SIZE,
           accountId: user?.accountId,
         }),
+        graphqlRequest<DepositsPayload>(DEPOSITS_QUERY, {
+          page: 1,
+          limit: 5,
+          status: undefined,
+        }),
       ]);
 
       if (!accountsData) {
@@ -267,11 +373,14 @@ export default function AccountsPage() {
 
       const nextAccounts = [...accountsData.accounts];
       const nextTransactions = transactionsData.transactions ?? [];
+      const nextDeposits = depositsData.myDeposits ?? [];
 
       setAccounts(nextAccounts);
       setTransactions(nextTransactions);
+      setDeposits(nextDeposits);
       setAccountsTotalCount(accountsData.accountsCount ?? 0);
       setTransactionsTotalCount(transactionsData.transactionsCount ?? 0);
+      setDepositsTotalCount(depositsData.myDepositsCount ?? 0);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {
@@ -308,6 +417,42 @@ export default function AccountsPage() {
             description: payload.description
               ? payload.description
               : `Transferencia em ${formatDateTime(payload.createdAt)}`,
+            },
+          );
+
+          void loadDashboardData();
+        },
+      },
+    );
+
+    return () => {
+      subscription.dispose();
+    };
+  }, [loadDashboardData, relayEnvironment, user?.accountId]);
+
+  useEffect(() => {
+    if (!user?.accountId) {
+      return;
+    }
+
+    const subscription = requestSubscription<accountsDepositConfirmedSubscription>(
+      relayEnvironment,
+      {
+        subscription: depositConfirmedSubscription,
+        variables: {
+          accountId: user.accountId,
+        },
+        onNext: (data) => {
+          const payload = data?.depositConfirmed;
+
+          if (!payload) {
+            return;
+          }
+
+          toast.success(
+            `Deposito confirmado: ${formatBalance(payload.amount)}`,
+            {
+              description: `Confirmado em ${formatDateTime(payload.completedAt)}`,
             },
           );
 
@@ -425,6 +570,40 @@ export default function AccountsPage() {
       setTransferFeedback(err instanceof Error ? err.message : "Falha na transferencia");
     } finally {
       setTransferLoading(false);
+    }
+  }
+
+  async function handleCreateDeposit() {
+    const amount = Number(depositAmount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setDepositFeedback("Informe um valor de deposito valido.");
+      return;
+    }
+
+    setDepositLoading(true);
+    setDepositFeedback(null);
+
+    try {
+      await graphqlRequest<{ CreateDeposit: Deposit }>(CREATE_DEPOSIT_MUTATION, {
+        amount,
+      });
+
+      setDepositFeedback("Deposito Pix gerado com sucesso.");
+      await loadDashboardData();
+    } catch (err: unknown) {
+      setDepositFeedback(err instanceof Error ? err.message : "Falha ao gerar deposito");
+    } finally {
+      setDepositLoading(false);
+    }
+  }
+
+  async function handleCopyBrCode(brCode: string) {
+    try {
+      await navigator.clipboard.writeText(brCode);
+      toast.success("Codigo Pix copiado.");
+    } catch {
+      toast.error("Nao foi possivel copiar o codigo Pix.");
     }
   }
 
@@ -572,6 +751,126 @@ export default function AccountsPage() {
               </Button>
               {transferFeedback ? <p className="text-sm text-slate-700">{transferFeedback}</p> : null}
             </div>
+          </section>
+
+          <section
+            id="depositos"
+            className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">Depositar via Pix</h2>
+                <p className="text-xs text-slate-600">
+                  Gere um QR Code e acompanhe as confirmacoes em tempo real.
+                </p>
+              </div>
+              <p className="text-xs text-slate-600">Total historico: {depositsTotalCount}</p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+              <label className="text-sm">
+                Valor do deposito
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                  type="number"
+                  min={0.01}
+                  step="0.01"
+                  value={depositAmount}
+                  onChange={(event) => setDepositAmount(event.target.value)}
+                />
+              </label>
+              <div className="self-end">
+                <Button onClick={() => void handleCreateDeposit()} disabled={depositLoading}>
+                  {depositLoading ? "Gerando..." : "Gerar deposito Pix"}
+                </Button>
+              </div>
+            </div>
+
+            {depositFeedback ? <p className="text-sm text-slate-700">{depositFeedback}</p> : null}
+
+            {latestDeposit ? (
+              <div className="grid gap-4 rounded-xl border border-emerald-200 bg-white p-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-emerald-700">
+                      Deposito mais recente
+                    </p>
+                    <p className="mt-1 text-sm font-semibold">
+                      {getDepositStatusLabel(latestDeposit.status)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Criado em {formatDateTime(latestDeposit.createdAt)}
+                    </p>
+                  </div>
+                  <p className="text-sm">
+                    Valor solicitado: <strong>{formatBalance(latestDeposit.requestedAmount)}</strong>
+                  </p>
+                  {latestDeposit.paidAmount ? (
+                    <p className="text-sm text-emerald-700">
+                      Valor confirmado: <strong>{formatBalance(latestDeposit.paidAmount)}</strong>
+                    </p>
+                  ) : null}
+                  {latestDeposit.brCode ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-600">BR Code</p>
+                      <textarea
+                        className="h-24 w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs"
+                        value={latestDeposit.brCode}
+                        readOnly
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleCopyBrCode(latestDeposit.brCode ?? "")}
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copiar codigo Pix
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="flex items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+                  {latestDeposit.qrCodeImage ? (
+                    <img
+                      src={latestDeposit.qrCodeImage}
+                      alt="QR Code do deposito"
+                      className="h-48 w-48 rounded-md object-contain"
+                    />
+                  ) : (
+                    <p className="text-center text-sm text-slate-500">
+                      QR Code indisponivel para este deposito.
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-600">
+                Nenhum deposito gerado ainda.
+              </p>
+            )}
+
+            {deposits.length > 0 ? (
+              <ul className="space-y-2">
+                {deposits.map((deposit) => (
+                  <li
+                    key={deposit.id}
+                    className="rounded-xl border border-emerald-100 bg-white px-3 py-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {formatBalance(deposit.requestedAmount)} • {getDepositStatusLabel(deposit.status)}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          CorrelationID: {deposit.correlationID}
+                        </p>
+                      </div>
+                      <p className="text-xs text-slate-500">{formatDateTime(deposit.createdAt)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
 
           {user?.role === "ADMIN" ? (

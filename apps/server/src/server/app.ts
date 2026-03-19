@@ -5,10 +5,54 @@ import { schema } from "../schema/schema";
 import cors from "@koa/cors";
 import logger from "koa-logger";
 import { config } from "../config";
+import { handleWooviWebhookRequest } from "../modules/deposits/wooviWebhookService";
 import { findValidSession } from "../modules/sessions/sessionService";
 import type { GraphQLContext } from "../types/auth";
 
 const app = new Koa();
+
+function readRawRequestBody(req: Koa.Request["req"]) {
+	return new Promise<Buffer>((resolve, reject) => {
+		const chunks: Buffer[] = [];
+
+		req.on("data", (chunk) => {
+			chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+		});
+		req.on("end", () => resolve(Buffer.concat(chunks)));
+		req.on("error", reject);
+	});
+}
+
+function buildWebRequestFromKoa(ctx: Koa.Context, body: Buffer) {
+	const headers = new Headers();
+
+	for (const [key, value] of Object.entries(ctx.request.headers)) {
+		if (!value) {
+			continue;
+		}
+
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				headers.append(key, item);
+			}
+			continue;
+		}
+
+		headers.set(key, value);
+	}
+
+	const requestUrl = `${ctx.protocol}://${ctx.host}${ctx.originalUrl}`;
+	const requestInit: RequestInit = {
+		method: ctx.method,
+		headers,
+	};
+
+	if (ctx.method !== "GET" && ctx.method !== "HEAD") {
+		requestInit.body = body.toString("utf8");
+	}
+
+	return new Request(requestUrl, requestInit);
+}
 
 function getApolloSandboxHtml(endpoint: string): string {
 	return `<!DOCTYPE html>
@@ -85,6 +129,28 @@ app.use(
 app.use(logger());
 
 app.use(async (ctx, next) => {
+	if (ctx.path === "/webhooks/woovi" && ctx.method === "POST") {
+		try {
+			const body = await readRawRequestBody(ctx.req);
+			const request = buildWebRequestFromKoa(ctx, body);
+			const response = await handleWooviWebhookRequest(request);
+
+			ctx.status = response.status;
+			response.headers.forEach((value, key) => {
+				ctx.set(key, value);
+			});
+
+			ctx.body = await response.text();
+		} catch (error) {
+			// eslint-disable-next-line no-console
+			console.error("Erro ao processar webhook Woovi", error);
+			ctx.status = 500;
+			ctx.body = "Erro interno ao processar webhook Woovi";
+		}
+
+		return;
+	}
+
 	if (ctx.path === "/graphql" && ctx.method === "GET" && ctx.accepts("html")) {
 		const endpoint = `${ctx.protocol}://${ctx.host}/graphql`;
 		ctx.status = 200;

@@ -6,6 +6,8 @@ type Query {
   transaction(id: ID!): Transaction
   transactions(page: Int, limit: Int, accountId: ID): [Transaction!]!
   transactionsCount(accountId: ID): Int!
+  myDeposits(page: Int, limit: Int, status: DepositRequestStatus): [DepositRequest!]!
+  myDepositsCount(status: DepositRequestStatus): Int!
 }
 
 type Me {
@@ -38,10 +40,33 @@ type Transaction {
   createdAt: String!
 }
 
+type DepositRequest {
+  id: ID!
+  accountId: ID!
+  correlationID: String!
+  requestedAmount: Float!
+  paidAmount: Float
+  status: DepositRequestStatus!
+  brCode: String
+  qrCodeImage: String
+  expiresDate: String
+  comment: String
+  createdAt: String!
+  completedAt: String
+  expiredAt: String
+}
+
+enum DepositRequestStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
 type Mutation {
   AddCredit(accountId: String!, amount: Float!, idempotencyKey: String!): Account!
   CreateAccount(holderName: String!): Account!
   DeleteUser(userId: String!): Boolean!
+  CreateDeposit(amount: Float!, comment: String): DepositRequest!
   Transfer(fromAccountId: String!, toAccountId: String!, amount: Float!, idempotencyKey: String!, description: String): Transaction!
   Login(email: String!, password: String!): AuthPayload!
   Logout: Boolean!
@@ -67,7 +92,17 @@ enum UserRole {
 }
 
 type Subscription {
+  depositConfirmed(accountId: ID!): DepositConfirmed!
   transferReceived(accountId: ID!): TransferReceived!
+}
+
+type DepositConfirmed {
+  depositId: ID!
+  accountId: ID!
+  correlationID: String!
+  amount: Float!
+  createdAt: String!
+  completedAt: String!
 }
 
 type TransferReceived {

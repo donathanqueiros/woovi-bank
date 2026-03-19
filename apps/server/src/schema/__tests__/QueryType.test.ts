@@ -35,10 +35,20 @@ jest.mock("../../modules/users/UserModel", () => {
   return { User };
 });
 
+jest.mock("../../modules/deposits/DepositRequestModel", () => {
+  const DepositRequest = Object.assign(jest.fn(), {
+    find: jest.fn(),
+    countDocuments: jest.fn(),
+  });
+
+  return { DepositRequest };
+});
+
 import { createAccountDocument } from "../../__tests__/factories/createAccountDocument";
 import { createTransactionDocument } from "../../__tests__/factories/createTransactionDocument";
 import { executeGraphQL } from "../../__tests__/helpers/executeGraphQL";
 import { Account } from "../../modules/accounts/AccountModel";
+import { DepositRequest } from "../../modules/deposits/DepositRequestModel";
 import { LedgerEntry } from "../../modules/ledger/LedgerEntryModel";
 import { Transaction } from "../../modules/transactions/TransactionModel";
 import { User } from "../../modules/users/UserModel";
@@ -64,8 +74,13 @@ const UserModel = User as unknown as jest.Mock & {
   findById: jest.Mock;
 };
 
+const DepositRequestModel = DepositRequest as unknown as {
+  find: jest.Mock;
+  countDocuments: jest.Mock;
+};
+
 describe("QueryType", () => {
-  it("retorna total de contas para paginação", async () => {
+  it("returns total accounts count for pagination", async () => {
     AccountModel.countDocuments.mockResolvedValue(23);
 
     const result = await executeGraphQL(`
@@ -81,7 +96,7 @@ describe("QueryType", () => {
     });
   });
 
-  it("lista contas paginadas com page e limit", async () => {
+  it("lists paginated accounts with page and limit", async () => {
     AccountModel.find.mockResolvedValue([
       createAccountDocument({ id: "account-11", holderName: "Lucas" }),
       createAccountDocument({ id: "account-12", holderName: "Paula" }),
@@ -115,7 +130,7 @@ describe("QueryType", () => {
     });
   });
 
-  it("lista contas pelo root query", async () => {
+  it("lists accounts from root query", async () => {
     AccountModel.find.mockResolvedValue([
       createAccountDocument({ id: "account-1", holderName: "Joao" }),
       createAccountDocument({ id: "account-2", holderName: "Maria" }),
@@ -145,7 +160,7 @@ describe("QueryType", () => {
     });
   });
 
-  it("retorna me com accountId quando autenticado", async () => {
+  it("returns me with accountId when authenticated", async () => {
     UserModel.findById.mockResolvedValue({
       id: "user-1",
       email: "ana@woovi.com",
@@ -189,7 +204,7 @@ describe("QueryType", () => {
     });
   });
 
-  it("busca uma transacao pelo id", async () => {
+  it("fetches a transaction by id", async () => {
     TransactionModel.findById.mockResolvedValue(
       createTransactionDocument({
         id: "transaction-9",
@@ -219,7 +234,7 @@ describe("QueryType", () => {
     });
   });
 
-  it("lista transacoes paginadas com page e limit", async () => {
+  it("lists paginated transactions with page and limit", async () => {
     TransactionModel.find.mockResolvedValue([
       createTransactionDocument({
         id: "transaction-3",
@@ -255,7 +270,7 @@ describe("QueryType", () => {
     });
   });
 
-  it("retorna total de transacoes por conta para paginação", async () => {
+  it("returns transactions count by account for pagination", async () => {
     TransactionModel.countDocuments.mockResolvedValue(14);
 
     const result = await executeGraphQL(`
@@ -273,6 +288,107 @@ describe("QueryType", () => {
     });
     expect(result.data).toEqual({
       transactionsCount: 14,
+    });
+  });
+
+  it("blocks myDeposits when user is not authenticated", async () => {
+    const result = await executeGraphQL(`
+      query {
+        myDeposits {
+          id
+        }
+      }
+    `);
+
+    expect(result.errors).toBeDefined();
+    expect(result.errors?.[0]?.message).toContain("Usuario nao autenticado");
+  });
+
+  it("lists myDeposits with status filter", async () => {
+    AccountModel.findOne.mockResolvedValueOnce(
+      createAccountDocument({ id: "account-1", userId: "user-1" }),
+    );
+    DepositRequestModel.find.mockResolvedValueOnce([
+      {
+        id: "deposit-1",
+        accountId: "account-1",
+        correlationID: "corr-1",
+        requestedAmount: 90,
+        status: "PENDING",
+        wooviChargeData: {},
+        createdAt: "2026-03-19T12:00:00.000Z",
+      },
+    ]);
+
+    const result = await executeGraphQL(
+      `
+      query {
+        myDeposits(page: 1, limit: 5, status: PENDING) {
+          id
+          status
+          requestedAmount
+        }
+      }
+    `,
+      {
+        auth: {
+          userId: "user-1",
+          role: "USER",
+        },
+      },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(DepositRequestModel.find).toHaveBeenCalledWith(
+      {
+        accountId: "account-1",
+        status: "PENDING",
+      },
+      null,
+      {
+        sort: { createdAt: -1 },
+        skip: 0,
+        limit: 5,
+      },
+    );
+    expect(result.data).toEqual({
+      myDeposits: [
+        {
+          id: "deposit-1",
+          status: "PENDING",
+          requestedAmount: 90,
+        },
+      ],
+    });
+  });
+
+  it("returns myDepositsCount by status", async () => {
+    AccountModel.findOne.mockResolvedValueOnce(
+      createAccountDocument({ id: "account-1", userId: "user-1" }),
+    );
+    DepositRequestModel.countDocuments.mockResolvedValueOnce(3);
+
+    const result = await executeGraphQL(
+      `
+      query {
+        myDepositsCount(status: COMPLETED)
+      }
+    `,
+      {
+        auth: {
+          userId: "user-1",
+          role: "USER",
+        },
+      },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(DepositRequestModel.countDocuments).toHaveBeenCalledWith({
+      accountId: "account-1",
+      status: "COMPLETED",
+    });
+    expect(result.data).toEqual({
+      myDepositsCount: 3,
     });
   });
 });
