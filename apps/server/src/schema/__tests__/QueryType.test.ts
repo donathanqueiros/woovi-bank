@@ -3,6 +3,7 @@ jest.mock("../../modules/accounts/AccountModel", () => {
     find: jest.fn(),
     findById: jest.fn(),
     findOne: jest.fn(),
+    countDocuments: jest.fn(),
   });
 
   return { Account };
@@ -12,6 +13,7 @@ jest.mock("../../modules/transactions/TransactionModel", () => {
   const Transaction = Object.assign(jest.fn(), {
     find: jest.fn(),
     findById: jest.fn(),
+    countDocuments: jest.fn(),
   });
 
   return { Transaction };
@@ -45,11 +47,13 @@ const AccountModel = Account as unknown as jest.Mock & {
   find: jest.Mock;
   findById: jest.Mock;
   findOne: jest.Mock;
+  countDocuments: jest.Mock;
 };
 
 const TransactionModel = Transaction as unknown as jest.Mock & {
   find: jest.Mock;
   findById: jest.Mock;
+  countDocuments: jest.Mock;
 };
 
 const LedgerEntryModel = LedgerEntry as unknown as {
@@ -61,6 +65,22 @@ const UserModel = User as unknown as jest.Mock & {
 };
 
 describe("QueryType", () => {
+  it("retorna total de contas para paginação", async () => {
+    AccountModel.countDocuments.mockResolvedValue(23);
+
+    const result = await executeGraphQL(`
+      query {
+        accountsCount
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    expect(AccountModel.countDocuments).toHaveBeenCalledWith({});
+    expect(result.data).toEqual({
+      accountsCount: 23,
+    });
+  });
+
   it("lista contas paginadas com page e limit", async () => {
     AccountModel.find.mockResolvedValue([
       createAccountDocument({ id: "account-11", holderName: "Lucas" }),
@@ -232,6 +252,27 @@ describe("QueryType", () => {
           description: "Pix",
         },
       ],
+    });
+  });
+
+  it("retorna total de transacoes por conta para paginação", async () => {
+    TransactionModel.countDocuments.mockResolvedValue(14);
+
+    const result = await executeGraphQL(`
+      query {
+        transactionsCount(accountId: "account-1")
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    expect(TransactionModel.countDocuments).toHaveBeenCalledWith({
+      $or: [
+        { fromAccountId: "account-1" },
+        { toAccountId: "account-1" },
+      ],
+    });
+    expect(result.data).toEqual({
+      transactionsCount: 14,
     });
   });
 });

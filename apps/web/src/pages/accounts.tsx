@@ -29,6 +29,7 @@ const PAGE_SIZE = 10;
 
 const accountsPageQuery = graphql`
   query accountsQuery($page: Int!, $limit: Int!) {
+    accountsCount
     accounts(page: $page, limit: $limit) {
       id
       holderName
@@ -41,6 +42,7 @@ const accountsPageQuery = graphql`
 type Account = NonNullable<accountsQuery["response"]["accounts"]>[number];
 
 type TransactionsPayload = {
+  transactionsCount: number;
   transactions: Array<{
     id: string;
     amount: number;
@@ -59,6 +61,7 @@ type TransactionsPayload = {
 
 const TRANSACTIONS_QUERY = `
   query Transactions($page: Int!, $limit: Int!, $accountId: ID) {
+    transactionsCount(accountId: $accountId)
     transactions(page: $page, limit: $limit, accountId: $accountId) {
       id
       amount
@@ -158,8 +161,8 @@ export default function AccountsPage() {
   const [search, setSearch] = useState("");
   const [accountsPage, setAccountsPage] = useState(1);
   const [transactionsPage, setTransactionsPage] = useState(1);
-  const [hasMoreAccounts, setHasMoreAccounts] = useState(false);
-  const [hasMoreTransactions, setHasMoreTransactions] = useState(false);
+  const [accountsTotalCount, setAccountsTotalCount] = useState(0);
+  const [transactionsTotalCount, setTransactionsTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transferTo, setTransferTo] = useState("");
@@ -246,8 +249,8 @@ export default function AccountsPage() {
 
       setAccounts(nextAccounts);
       setTransactions(nextTransactions);
-      setHasMoreAccounts(nextAccounts.length === PAGE_SIZE);
-      setHasMoreTransactions(nextTransactions.length === PAGE_SIZE);
+      setAccountsTotalCount(accountsData.accountsCount ?? 0);
+      setTransactionsTotalCount(transactionsData.transactionsCount ?? 0);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {
@@ -310,6 +313,16 @@ export default function AccountsPage() {
           parseDateValue(b.createdAt) - parseDateValue(a.createdAt),
       ),
     [transactions],
+  );
+
+  const accountsTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(accountsTotalCount / PAGE_SIZE)),
+    [accountsTotalCount],
+  );
+
+  const transactionsTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(transactionsTotalCount / PAGE_SIZE)),
+    [transactionsTotalCount],
   );
 
   const navigateToSection = useCallback((id: string) => {
@@ -638,7 +651,9 @@ export default function AccountsPage() {
             ) : null}
 
             <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-              <p className="text-xs text-muted-foreground">Pagina {transactionsPage}</p>
+              <p className="text-xs text-muted-foreground">
+                Pagina {transactionsPage} de {transactionsTotalPages}
+              </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -651,7 +666,7 @@ export default function AccountsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!hasMoreTransactions || loading}
+                  disabled={transactionsPage >= transactionsTotalPages || loading}
                   onClick={() => setTransactionsPage((page) => page + 1)}
                 >
                   Proxima
@@ -732,7 +747,9 @@ export default function AccountsPage() {
             ) : null}
 
             <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-              <p className="text-xs text-muted-foreground">Pagina {accountsPage}</p>
+              <p className="text-xs text-muted-foreground">
+                Pagina {accountsPage} de {accountsTotalPages}
+              </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -745,7 +762,7 @@ export default function AccountsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!hasMoreAccounts || loading}
+                  disabled={accountsPage >= accountsTotalPages || loading}
                   onClick={() => setAccountsPage((page) => page + 1)}
                 >
                   Proxima

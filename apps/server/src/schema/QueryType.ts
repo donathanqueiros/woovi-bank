@@ -108,6 +108,13 @@ export const QueryType = new GraphQLObjectType({
       },
     },
 
+    accountsCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      resolve: async () => {
+        return await Account.countDocuments({});
+      },
+    },
+
     transaction: {
       type: TransactionType,
       args: {
@@ -146,6 +153,25 @@ export const QueryType = new GraphQLObjectType({
           skip,
           limit,
         });
+      },
+    },
+
+    transactionsCount: {
+      type: new GraphQLNonNull(GraphQLInt),
+      args: {
+        accountId: { type: GraphQLID },
+      },
+      resolve: async (_source, args: { accountId?: string }) => {
+        const query = args.accountId
+          ? {
+              $or: [
+                { fromAccountId: args.accountId },
+                { toAccountId: args.accountId },
+              ],
+            }
+          : {};
+
+        return await Transaction.countDocuments(query);
       },
     },
   },

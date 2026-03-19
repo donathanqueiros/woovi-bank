@@ -2,8 +2,10 @@ type Query {
   me: Me
   account(id: ID!): Account
   accounts(page: Int, limit: Int): [Account!]!
+  accountsCount: Int!
   transaction(id: ID!): Transaction
   transactions(page: Int, limit: Int, accountId: ID): [Transaction!]!
+  transactionsCount(accountId: ID): Int!
 }
 
 type Me {
