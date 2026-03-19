@@ -1,0 +1,390 @@
+{
+  "info": {
+    "_postman_id": "2f1cf5df-4f7f-4fef-90cf-2d4d8f6b8d31",
+    "name": "Woovi Bank GraphQL API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection para chamadas GraphQL do backend (/graphql)."
+  },
+  "item": [
+    {
+      "name": "Queries",
+      "item": [
+        {
+          "name": "Query - account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query account($id: ID!) {\\n  account(id: $id) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"id\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Query account gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Query - accounts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query accounts($page: Int, $limit: Int) {\\n  accounts(page: $page, limit: $limit) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"page\": 0,\n    \"limit\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Query accounts gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Query - accountsCount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query accountsCount {\\n  accountsCount\\n}\",\n  \"variables\": {}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Query accountsCount gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Query - me",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query me {\\n  me {\\n    __typename\\n  }\\n}\",\n  \"variables\": {}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Query me gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Query - transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query transaction($id: ID!) {\\n  transaction(id: $id) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"id\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Query transaction gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Query - transactions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query transactions($page: Int, $limit: Int, $accountId: ID) {\\n  transactions(page: $page, limit: $limit, accountId: $accountId) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"page\": 0,\n    \"limit\": 0,\n    \"accountId\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Query transactions gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Query - transactionsCount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query transactionsCount($accountId: ID) {\\n  transactionsCount(accountId: $accountId)\\n}\",\n  \"variables\": {\n    \"accountId\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Query transactionsCount gerada automaticamente a partir do schema."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mutations",
+      "item": [
+        {
+          "name": "Mutation - AddCredit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation AddCredit($accountId: String!, $amount: Float!, $idempotencyKey: String!) {\\n  AddCredit(accountId: $accountId, amount: $amount, idempotencyKey: $idempotencyKey) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"accountId\": \"replace-me\",\n    \"amount\": 0,\n    \"idempotencyKey\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Mutation AddCredit gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Mutation - CreateAccount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateAccount($holderName: String!) {\\n  CreateAccount(holderName: $holderName) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"holderName\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Mutation CreateAccount gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Mutation - DeleteUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DeleteUser($userId: String!) {\\n  DeleteUser(userId: $userId)\\n}\",\n  \"variables\": {\n    \"userId\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Mutation DeleteUser gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Mutation - Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Login($email: String!, $password: String!) {\\n  Login(email: $email, password: $password) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"email\": \"replace-me\",\n    \"password\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Mutation Login gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Mutation - Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Logout {\\n  Logout\\n}\",\n  \"variables\": {}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Mutation Logout gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Mutation - SignUp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation SignUp($email: String!, $password: String!) {\\n  SignUp(email: $email, password: $password) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"email\": \"replace-me\",\n    \"password\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Mutation SignUp gerada automaticamente a partir do schema."
+          }
+        },
+        {
+          "name": "Mutation - Transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Transfer($fromAccountId: String!, $toAccountId: String!, $amount: Float!, $idempotencyKey: String!, $description: String) {\\n  Transfer(fromAccountId: $fromAccountId, toAccountId: $toAccountId, amount: $amount, idempotencyKey: $idempotencyKey, description: $description) {\\n    __typename\\n  }\\n}\",\n  \"variables\": {\n    \"fromAccountId\": \"replace-me\",\n    \"toAccountId\": \"replace-me\",\n    \"amount\": 0,\n    \"idempotencyKey\": \"replace-me\",\n    \"description\": \"replace-me\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            },
+            "description": "Mutation Transfer gerada automaticamente a partir do schema."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    }
+  ]
+}
