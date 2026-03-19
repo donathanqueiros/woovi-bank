@@ -1,13 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Search, User, DollarSign, Calendar, Loader2, SendHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import {
+  ArrowDownLeft,
+  ArrowRightLeft,
+  ArrowUpRight,
+  Calendar,
+  DollarSign,
+  Landmark,
+  Loader2,
+  Search,
+  SendHorizontal,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 import { fetchQuery, graphql, useRelayEnvironment } from "react-relay";
-import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
+import { Button } from "@/components/ui/button";
+import {
+  DashboardSidebar,
+  type SidebarItem,
+} from "@/components/dashboard-sidebar";
+import { cn } from "@/lib/utils";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
+import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
 
 const accountsPageQuery = graphql`
   query accountsQuery {
@@ -21,6 +37,42 @@ const accountsPageQuery = graphql`
 `;
 
 type Account = NonNullable<accountsQuery["response"]["accounts"]>[number];
+
+type TransactionsPayload = {
+  transactions: Array<{
+    id: string;
+    amount: number;
+    description?: string | null;
+    createdAt: string;
+    fromAccount: {
+      id: string;
+      holderName: string;
+    };
+    toAccount: {
+      id: string;
+      holderName: string;
+    };
+  }>;
+};
+
+const TRANSACTIONS_QUERY = `
+  query Transactions {
+    transactions {
+      id
+      amount
+      description
+      createdAt
+      fromAccount {
+        id
+        holderName
+      }
+      toAccount {
+        id
+        holderName
+      }
+    }
+  }
+`;
 
 const TRANSFER_MUTATION = `
   mutation Transfer($fromAccountId: String!, $toAccountId: String!, $amount: Float!, $idempotencyKey: String!, $description: String) {
@@ -66,13 +118,29 @@ function formatBalance(value: number) {
   }).format(value);
 }
 
+function parseDateValue(value: string) {
+  const ts = Number(value);
+  return Number.isFinite(ts) ? ts : Date.parse(value);
+}
+
 function formatDate(isoString: string) {
-  const ts = Number(isoString);
-  const date = Number.isFinite(ts) ? new Date(ts) : new Date(isoString);
+  const date = new Date(parseDateValue(isoString));
+
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  }).format(date);
+}
+
+function formatDateTime(isoString: string) {
+  const date = new Date(parseDateValue(isoString));
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -84,6 +152,7 @@ export default function AccountsPage() {
   const relayEnvironment = useRelayEnvironment();
   const { user, logout } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [transactions, setTransactions] = useState<TransactionsPayload["transactions"]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,30 +166,70 @@ export default function AccountsPage() {
   const [adminFeedback, setAdminFeedback] = useState<string | null>(null);
   const [adminLoading, setAdminLoading] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState("");
-
-  const authHeaders = useMemo(() => undefined, []);
+  const [activeItemId, setActiveItemId] = useState("contas");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const myAccount = useMemo(
     () => accounts.find((account) => account.id === user?.accountId) ?? null,
     [accounts, user?.accountId],
   );
 
-  const loadAccounts = useCallback(async () => {
+  const sidebarItems = useMemo<SidebarItem[]>(() => {
+    const items: SidebarItem[] = [
+      {
+        id: "contas",
+        label: "Contas",
+        description: "Busca e consulta de saldos",
+        icon: Landmark,
+      },
+      {
+        id: "transacoes",
+        label: "Transacoes",
+        description: "Extrato das movimentacoes",
+        icon: ArrowRightLeft,
+      },
+      {
+        id: "transferencias",
+        label: "Transferencias",
+        description: "Envio de dinheiro entre contas",
+        icon: SendHorizontal,
+      },
+      {
+        id: "perfil",
+        label: "Perfil",
+        description: "Sessao e seguranca",
+        icon: User,
+      },
+    ];
+
+    if (user?.role === "ADMIN") {
+      items.push({
+        id: "administracao",
+        label: "Administracao",
+        description: "Credito e exclusao de usuarios",
+        icon: ShieldCheck,
+      });
+    }
+
+    return items;
+  }, [user?.role]);
+
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await fetchQuery<accountsQuery>(
-        relayEnvironment,
-        accountsPageQuery,
-        {},
-      ).toPromise();
+      const [accountsData, transactionsData] = await Promise.all([
+        fetchQuery<accountsQuery>(relayEnvironment, accountsPageQuery, {}).toPromise(),
+        graphqlRequest<TransactionsPayload>(TRANSACTIONS_QUERY, {}),
+      ]);
 
-      if (!data) {
+      if (!accountsData) {
         throw new Error("Resposta vazia do servidor");
       }
 
-      setAccounts([...data.accounts]);
+      setAccounts([...accountsData.accounts]);
+      setTransactions(transactionsData.transactions ?? []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {
@@ -129,8 +238,8 @@ export default function AccountsPage() {
   }, [relayEnvironment]);
 
   useEffect(() => {
-    void loadAccounts();
-  }, [loadAccounts]);
+    void loadDashboardData();
+  }, [loadDashboardData]);
 
   useEffect(() => {
     if (myAccount && !creditAccountId) {
@@ -138,9 +247,66 @@ export default function AccountsPage() {
     }
   }, [creditAccountId, myAccount]);
 
-  const filtered = accounts.filter((acc) =>
-    acc.holderName.toLowerCase().includes(search.toLowerCase()),
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntry = entries.find((entry) => entry.isIntersecting);
+
+        if (visibleEntry?.target?.id) {
+          setActiveItemId(visibleEntry.target.id);
+        }
+      },
+      {
+        threshold: 0.3,
+        rootMargin: "-20% 0px -60% 0px",
+      },
+    );
+
+    sidebarItems.forEach((item) => {
+      const element = document.getElementById(item.id);
+
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [sidebarItems]);
+
+  const filteredAccounts = useMemo(
+    () =>
+      accounts.filter((account) =>
+        account.holderName.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [accounts, search],
   );
+
+  const accountTransactions = useMemo(
+    () =>
+      [...transactions]
+        .filter(
+          (transaction) =>
+            transaction.fromAccount.id === user?.accountId ||
+            transaction.toAccount.id === user?.accountId,
+        )
+        .sort(
+          (a, b) =>
+            parseDateValue(b.createdAt) - parseDateValue(a.createdAt),
+        ),
+    [transactions, user?.accountId],
+  );
+
+  const navigateToSection = useCallback((id: string) => {
+    setActiveItemId(id);
+
+    const element = document.getElementById(id);
+
+    if (!element) {
+      return;
+    }
+
+    element.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   async function handleTransfer() {
     if (!user) {
@@ -162,11 +328,11 @@ export default function AccountsPage() {
         amount: Number(transferAmount),
         idempotencyKey: newIdempotencyKey(),
         description: transferDescription || undefined,
-      }, authHeaders);
+      });
 
       setTransferFeedback("Transferencia enviada com sucesso.");
       setTransferDescription("");
-      await loadAccounts();
+      await loadDashboardData();
     } catch (err: unknown) {
       setTransferFeedback(err instanceof Error ? err.message : "Falha na transferencia");
     } finally {
@@ -179,18 +345,14 @@ export default function AccountsPage() {
     setAdminFeedback(null);
 
     try {
-      await graphqlRequest(
-        ADD_CREDIT_MUTATION,
-        {
-          accountId: creditAccountId,
-          amount: Number(creditAmount),
-          idempotencyKey: newIdempotencyKey(),
-        },
-        authHeaders,
-      );
+      await graphqlRequest(ADD_CREDIT_MUTATION, {
+        accountId: creditAccountId,
+        amount: Number(creditAmount),
+        idempotencyKey: newIdempotencyKey(),
+      });
 
       setAdminFeedback("Credito adicionado com sucesso.");
-      await loadAccounts();
+      await loadDashboardData();
     } catch (err: unknown) {
       setAdminFeedback(err instanceof Error ? err.message : "Falha ao adicionar credito");
     } finally {
@@ -208,10 +370,10 @@ export default function AccountsPage() {
     setAdminFeedback(null);
 
     try {
-      await graphqlRequest(DELETE_USER_MUTATION, { userId: deleteUserId }, authHeaders);
+      await graphqlRequest(DELETE_USER_MUTATION, { userId: deleteUserId });
       setAdminFeedback("Usuario excluido com sucesso.");
       setDeleteUserId("");
-      await loadAccounts();
+      await loadDashboardData();
     } catch (err: unknown) {
       setAdminFeedback(err instanceof Error ? err.message : "Falha ao excluir usuario");
     } finally {
@@ -221,7 +383,7 @@ export default function AccountsPage() {
 
   async function handleLogout() {
     try {
-      await graphqlRequest(LOGOUT_MUTATION, {}, authHeaders);
+      await graphqlRequest(LOGOUT_MUTATION, {});
     } catch {
       // Always clear local auth state even if session cleanup fails remotely.
     } finally {
@@ -230,202 +392,308 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10 text-foreground">
-      <div className="mx-auto max-w-4xl space-y-8">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-amber-700">painel</p>
-            <h1 className="text-3xl font-semibold tracking-tight">Contas e transferencias</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Usuario: {user?.email} ({user?.role})
-            </p>
-          </div>
-          <Button variant="outline" onClick={() => void handleLogout()}>
-            Sair
-          </Button>
-        </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex w-full max-w-7xl gap-6 px-4 py-6 lg:px-6">
+        <DashboardSidebar
+          items={sidebarItems}
+          activeItemId={activeItemId}
+          onSelect={navigateToSection}
+          mobileOpen={mobileSidebarOpen}
+          onMobileOpenChange={setMobileSidebarOpen}
+        />
 
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold">Transferir dinheiro</h2>
-              <p className="text-xs text-slate-600">
-                Botao de acao para enviar entre contas.
-              </p>
+        <main className="min-w-0 flex-1 space-y-8">
+          <section
+            id="perfil"
+            className="rounded-2xl border border-border bg-card p-4 sm:p-5"
+          >
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-amber-700">painel</p>
+                <h1 className="text-3xl font-semibold tracking-tight">Contas e transferencias</h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Usuario: {user?.email} ({user?.role})
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => void handleLogout()}>
+                Sair
+              </Button>
             </div>
-            <div className="text-right text-sm">
-              <p className="text-slate-500">Saldo da sua conta</p>
-              <p className="font-semibold">{formatBalance(myAccount?.balance ?? 0)}</p>
+          </section>
+
+          <section
+            id="transferencias"
+            className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">Transferir dinheiro</h2>
+                <p className="text-xs text-slate-600">Botao de acao para enviar entre contas.</p>
+              </div>
+              <div className="text-right text-sm">
+                <p className="text-slate-500">Saldo da sua conta</p>
+                <p className="font-semibold">{formatBalance(myAccount?.balance ?? 0)}</p>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <label className="text-sm">
-              Destino
-              <select
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                value={transferTo}
-                onChange={(event) => setTransferTo(event.target.value)}
-              >
-                <option value="">Selecione</option>
-                {accounts
-                  .filter((account) => account.id !== user?.accountId)
-                  .map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.holderName} ({account.id.slice(0, 8)})
-                    </option>
-                  ))}
-              </select>
-            </label>
-
-            <label className="text-sm">
-              Valor
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                type="number"
-                min={0.01}
-                step="0.01"
-                value={transferAmount}
-                onChange={(event) => setTransferAmount(event.target.value)}
-              />
-            </label>
-
-            <label className="text-sm">
-              Descricao
-              <input
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                value={transferDescription}
-                onChange={(event) => setTransferDescription(event.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className="mt-4 flex items-center gap-3">
-            <Button onClick={() => void handleTransfer()} disabled={transferLoading}>
-              <SendHorizontal className="mr-2 h-4 w-4" />
-              {transferLoading ? "Transferindo..." : "Transferir agora"}
-            </Button>
-            {transferFeedback ? (
-              <p className="text-sm text-slate-700">{transferFeedback}</p>
-            ) : null}
-          </div>
-        </section>
-
-        {user?.role === "ADMIN" ? (
-          <section className="space-y-3 rounded-2xl border border-sky-200 bg-sky-50/60 p-4">
-            <h2 className="text-sm font-semibold">Acoes de administrador</h2>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
               <label className="text-sm">
-                Conta para credito
-                <input
+                Destino
+                <select
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                  value={creditAccountId}
-                  onChange={(event) => setCreditAccountId(event.target.value)}
-                />
+                  value={transferTo}
+                  onChange={(event) => setTransferTo(event.target.value)}
+                >
+                  <option value="">Selecione</option>
+                  {accounts
+                    .filter((account) => account.id !== user?.accountId)
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.holderName} ({account.id.slice(0, 8)})
+                      </option>
+                    ))}
+                </select>
               </label>
+
               <label className="text-sm">
-                Valor do credito
+                Valor
                 <input
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                   type="number"
                   min={0.01}
                   step="0.01"
-                  value={creditAmount}
-                  onChange={(event) => setCreditAmount(event.target.value)}
+                  value={transferAmount}
+                  onChange={(event) => setTransferAmount(event.target.value)}
                 />
               </label>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => void handleAddCredit()} disabled={adminLoading}>
-                Adicionar credito
-              </Button>
+
+              <label className="text-sm">
+                Descricao
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                  value={transferDescription}
+                  onChange={(event) => setTransferDescription(event.target.value)}
+                />
+              </label>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-              <label className="text-sm">
-                ID do usuario para excluir
-                <input
-                  className="mt-1 w-full rounded-lg border border-rose-300 bg-white px-3 py-2"
-                  value={deleteUserId}
-                  onChange={(event) => setDeleteUserId(event.target.value)}
-                  placeholder="user id"
-                />
-              </label>
-              <div className="self-end">
-                <Button
-                  variant="destructive"
-                  disabled={adminLoading}
-                  onClick={() => void handleDeleteUser()}
-                >
-                  Excluir usuario
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button onClick={() => void handleTransfer()} disabled={transferLoading}>
+                <SendHorizontal className="mr-2 h-4 w-4" />
+                {transferLoading ? "Transferindo..." : "Transferir agora"}
+              </Button>
+              {transferFeedback ? <p className="text-sm text-slate-700">{transferFeedback}</p> : null}
+            </div>
+          </section>
+
+          {user?.role === "ADMIN" ? (
+            <section
+              id="administracao"
+              className="space-y-3 rounded-2xl border border-sky-200 bg-sky-50/60 p-4"
+            >
+              <h2 className="text-sm font-semibold">Acoes de administrador</h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-sm">
+                  Conta para credito
+                  <input
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                    value={creditAccountId}
+                    onChange={(event) => setCreditAccountId(event.target.value)}
+                  />
+                </label>
+                <label className="text-sm">
+                  Valor do credito
+                  <input
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                    type="number"
+                    min={0.01}
+                    step="0.01"
+                    value={creditAmount}
+                    onChange={(event) => setCreditAmount(event.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => void handleAddCredit()} disabled={adminLoading}>
+                  Adicionar credito
                 </Button>
               </div>
+
+              <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                <label className="text-sm">
+                  ID do usuario para excluir
+                  <input
+                    className="mt-1 w-full rounded-lg border border-rose-300 bg-white px-3 py-2"
+                    value={deleteUserId}
+                    onChange={(event) => setDeleteUserId(event.target.value)}
+                    placeholder="user id"
+                  />
+                </label>
+                <div className="self-end">
+                  <Button
+                    variant="destructive"
+                    disabled={adminLoading}
+                    onClick={() => void handleDeleteUser()}
+                  >
+                    Excluir usuario
+                  </Button>
+                </div>
+              </div>
+
+              {adminFeedback ? <p className="text-sm">{adminFeedback}</p> : null}
+            </section>
+          ) : null}
+
+          <section
+            id="transacoes"
+            className="space-y-3 rounded-2xl border border-border bg-card p-4"
+          >
+            <div>
+              <h2 className="text-base font-semibold">Transacoes recentes</h2>
+              <p className="text-sm text-muted-foreground">Movimentacoes de entrada e saida da sua conta.</p>
             </div>
 
-            {adminFeedback ? <p className="text-sm">{adminFeedback}</p> : null}
+            {!loading && accountTransactions.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                Sem transacoes para exibir no momento.
+              </p>
+            ) : null}
+
+            {!loading && accountTransactions.length > 0 ? (
+              <ul className="space-y-2">
+                {accountTransactions.slice(0, 12).map((transaction) => {
+                  const outgoing = transaction.fromAccount.id === user?.accountId;
+                  const counterpart = outgoing
+                    ? transaction.toAccount.holderName
+                    : transaction.fromAccount.holderName;
+
+                  return (
+                    <li
+                      key={transaction.id}
+                      className="rounded-xl border border-border bg-background px-3 py-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              "flex size-8 items-center justify-center rounded-full",
+                              outgoing
+                                ? "bg-rose-100 text-rose-700"
+                                : "bg-emerald-100 text-emerald-700",
+                            )}
+                          >
+                            {outgoing ? (
+                              <ArrowUpRight className="size-4" />
+                            ) : (
+                              <ArrowDownLeft className="size-4" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium leading-none">
+                              {outgoing ? "Transferencia enviada" : "Transferencia recebida"}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">Conta: {counterpart}</p>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <p
+                            className={cn(
+                              "text-sm font-semibold",
+                              outgoing ? "text-rose-700" : "text-emerald-700",
+                            )}
+                          >
+                            {outgoing ? "-" : "+"}
+                            {formatBalance(transaction.amount)}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {formatDateTime(transaction.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {transaction.description ? (
+                        <p className="mt-2 text-xs text-slate-600">{transaction.description}</p>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
           </section>
-        ) : null}
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Buscar por nome do titular..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={cn(
-              "w-full rounded-lg border border-border bg-background py-2 pl-9 pr-4 text-sm",
-              "outline-none transition-all focus:border-ring focus:ring-2 focus:ring-ring/30",
-            )}
-          />
-        </div>
+          <section
+            id="contas"
+            className="space-y-4 rounded-2xl border border-border bg-card p-4"
+          >
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar por nome do titular..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className={cn(
+                  "w-full rounded-lg border border-border bg-background py-2 pl-9 pr-4 text-sm",
+                  "outline-none transition-all focus:border-ring focus:ring-2 focus:ring-ring/30",
+                )}
+              />
+            </div>
 
-        {loading && (
-          <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            <span className="text-sm">Carregando contas...</span>
-          </div>
-        )}
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                <span className="text-sm">Carregando painel...</span>
+              </div>
+            ) : null}
 
-        {!loading && error && (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
+            {!loading && error ? (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {error}
+              </div>
+            ) : null}
 
-        {!loading && !error && filtered.length > 0 && (
-          <ul className="space-y-3">
-            {filtered.map((account) => (
-              <li
-                key={account.id}
-                className="rounded-xl border border-border bg-card p-4 shadow-xs transition-shadow hover:shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <User className="size-4" />
+            {!loading && !error && filteredAccounts.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                Nenhuma conta encontrada para este filtro.
+              </p>
+            ) : null}
+
+            {!loading && !error && filteredAccounts.length > 0 ? (
+              <ul className="space-y-3">
+                {filteredAccounts.map((account) => (
+                  <li
+                    key={account.id}
+                    className="rounded-xl border border-border bg-background p-4 shadow-xs transition-shadow hover:shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <User className="size-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium leading-none">{account.holderName}</p>
+                          <p className="mt-1 font-mono text-xs text-muted-foreground">{account.id}</p>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <div className="flex items-center justify-end gap-1 text-sm font-semibold">
+                          <DollarSign className="size-3.5 text-muted-foreground" />
+                          {formatBalance(account.balance)}
+                        </div>
+                        <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                          <Calendar className="size-3" />
+                          {formatDate(account.createdAt)}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium leading-none">{account.holderName}</p>
-                      <p className="mt-1 font-mono text-xs text-muted-foreground">{account.id}</p>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 text-right">
-                    <div className="flex items-center justify-end gap-1 text-sm font-semibold">
-                      <DollarSign className="size-3.5 text-muted-foreground" />
-                      {formatBalance(account.balance)}
-                    </div>
-                    <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                      <Calendar className="size-3" />
-                      {formatDate(account.createdAt)}
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        </main>
       </div>
     </div>
   );
