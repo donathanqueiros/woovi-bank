@@ -1,6 +1,7 @@
 import {
   GraphQLBoolean,
   GraphQLID,
+  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -13,6 +14,24 @@ import { TransactionType } from "../modules/transactions/TransactionType";
 import { Transaction } from "../modules/transactions/TransactionModel";
 import { User } from "../modules/users/UserModel";
 import type { GraphQLContext } from "../types/auth";
+
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 100;
+
+function getPagination(page?: number | null, limit?: number | null) {
+  const safePage =
+    typeof page === "number" && page > 0 ? Math.floor(page) : DEFAULT_PAGE;
+  const safeLimit =
+    typeof limit === "number" && limit > 0
+      ? Math.min(Math.floor(limit), MAX_LIMIT)
+      : DEFAULT_LIMIT;
+
+  return {
+    limit: safeLimit,
+    skip: (safePage - 1) * safeLimit,
+  };
+}
 
 const UserRoleType = new GraphQLEnumType({
   name: "QueryUserRole",
@@ -71,8 +90,21 @@ export const QueryType = new GraphQLObjectType({
       type: new GraphQLNonNull(
         new GraphQLList(new GraphQLNonNull(AccountType)),
       ),
-      resolve: async () => {
-        return await Account.find();
+      args: {
+        page: { type: GraphQLInt },
+        limit: { type: GraphQLInt },
+      },
+      resolve: async (
+        _source,
+        args: { page?: number; limit?: number },
+      ) => {
+        const { limit, skip } = getPagination(args.page, args.limit);
+
+        return await Account.find({}, null, {
+          sort: { createdAt: -1 },
+          skip,
+          limit,
+        });
       },
     },
 
@@ -90,8 +122,30 @@ export const QueryType = new GraphQLObjectType({
       type: new GraphQLNonNull(
         new GraphQLList(new GraphQLNonNull(TransactionType)),
       ),
-      resolve: async () => {
-        return await Transaction.find();
+      args: {
+        page: { type: GraphQLInt },
+        limit: { type: GraphQLInt },
+        accountId: { type: GraphQLID },
+      },
+      resolve: async (
+        _source,
+        args: { page?: number; limit?: number; accountId?: string },
+      ) => {
+        const { limit, skip } = getPagination(args.page, args.limit);
+        const query = args.accountId
+          ? {
+              $or: [
+                { fromAccountId: args.accountId },
+                { toAccountId: args.accountId },
+              ],
+            }
+          : {};
+
+        return await Transaction.find(query, null, {
+          sort: { createdAt: -1 },
+          skip,
+          limit,
+        });
       },
     },
   },

@@ -25,9 +25,11 @@ import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
 import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
 
+const PAGE_SIZE = 10;
+
 const accountsPageQuery = graphql`
-  query accountsQuery {
-    accounts {
+  query accountsQuery($page: Int!, $limit: Int!) {
+    accounts(page: $page, limit: $limit) {
       id
       holderName
       balance
@@ -56,8 +58,8 @@ type TransactionsPayload = {
 };
 
 const TRANSACTIONS_QUERY = `
-  query Transactions {
-    transactions {
+  query Transactions($page: Int!, $limit: Int!, $accountId: ID) {
+    transactions(page: $page, limit: $limit, accountId: $accountId) {
       id
       amount
       description
@@ -154,6 +156,10 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<TransactionsPayload["transactions"]>([]);
   const [search, setSearch] = useState("");
+  const [accountsPage, setAccountsPage] = useState(1);
+  const [transactionsPage, setTransactionsPage] = useState(1);
+  const [hasMoreAccounts, setHasMoreAccounts] = useState(false);
+  const [hasMoreTransactions, setHasMoreTransactions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transferTo, setTransferTo] = useState("");
@@ -220,26 +226,42 @@ export default function AccountsPage() {
 
     try {
       const [accountsData, transactionsData] = await Promise.all([
-        fetchQuery<accountsQuery>(relayEnvironment, accountsPageQuery, {}).toPromise(),
-        graphqlRequest<TransactionsPayload>(TRANSACTIONS_QUERY, {}),
+        fetchQuery<accountsQuery>(relayEnvironment, accountsPageQuery, {
+          page: accountsPage,
+          limit: PAGE_SIZE,
+        }).toPromise(),
+        graphqlRequest<TransactionsPayload>(TRANSACTIONS_QUERY, {
+          page: transactionsPage,
+          limit: PAGE_SIZE,
+          accountId: user?.accountId,
+        }),
       ]);
 
       if (!accountsData) {
         throw new Error("Resposta vazia do servidor");
       }
 
-      setAccounts([...accountsData.accounts]);
-      setTransactions(transactionsData.transactions ?? []);
+      const nextAccounts = [...accountsData.accounts];
+      const nextTransactions = transactionsData.transactions ?? [];
+
+      setAccounts(nextAccounts);
+      setTransactions(nextTransactions);
+      setHasMoreAccounts(nextAccounts.length === PAGE_SIZE);
+      setHasMoreTransactions(nextTransactions.length === PAGE_SIZE);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {
       setLoading(false);
     }
-  }, [relayEnvironment]);
+  }, [accountsPage, relayEnvironment, transactionsPage, user?.accountId]);
 
   useEffect(() => {
     void loadDashboardData();
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    setAccountsPage(1);
+  }, [search]);
 
   useEffect(() => {
     if (myAccount && !creditAccountId) {
@@ -283,17 +305,11 @@ export default function AccountsPage() {
 
   const accountTransactions = useMemo(
     () =>
-      [...transactions]
-        .filter(
-          (transaction) =>
-            transaction.fromAccount.id === user?.accountId ||
-            transaction.toAccount.id === user?.accountId,
-        )
-        .sort(
-          (a, b) =>
-            parseDateValue(b.createdAt) - parseDateValue(a.createdAt),
-        ),
-    [transactions, user?.accountId],
+      [...transactions].sort(
+        (a, b) =>
+          parseDateValue(b.createdAt) - parseDateValue(a.createdAt),
+      ),
+    [transactions],
   );
 
   const navigateToSection = useCallback((id: string) => {
@@ -561,7 +577,7 @@ export default function AccountsPage() {
 
             {!loading && accountTransactions.length > 0 ? (
               <ul className="space-y-2">
-                {accountTransactions.slice(0, 12).map((transaction) => {
+                {accountTransactions.map((transaction) => {
                   const outgoing = transaction.fromAccount.id === user?.accountId;
                   const counterpart = outgoing
                     ? transaction.toAccount.holderName
@@ -620,6 +636,28 @@ export default function AccountsPage() {
                 })}
               </ul>
             ) : null}
+
+            <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
+              <p className="text-xs text-muted-foreground">Pagina {transactionsPage}</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={transactionsPage === 1 || loading}
+                  onClick={() => setTransactionsPage((page) => Math.max(1, page - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasMoreTransactions || loading}
+                  onClick={() => setTransactionsPage((page) => page + 1)}
+                >
+                  Proxima
+                </Button>
+              </div>
+            </div>
           </section>
 
           <section
@@ -692,6 +730,28 @@ export default function AccountsPage() {
                 ))}
               </ul>
             ) : null}
+
+            <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
+              <p className="text-xs text-muted-foreground">Pagina {accountsPage}</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={accountsPage === 1 || loading}
+                  onClick={() => setAccountsPage((page) => Math.max(1, page - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasMoreAccounts || loading}
+                  onClick={() => setAccountsPage((page) => page + 1)}
+                >
+                  Proxima
+                </Button>
+              </div>
+            </div>
           </section>
         </main>
       </div>

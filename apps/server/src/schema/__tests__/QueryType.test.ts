@@ -61,6 +61,40 @@ const UserModel = User as unknown as jest.Mock & {
 };
 
 describe("QueryType", () => {
+  it("lista contas paginadas com page e limit", async () => {
+    AccountModel.find.mockResolvedValue([
+      createAccountDocument({ id: "account-11", holderName: "Lucas" }),
+      createAccountDocument({ id: "account-12", holderName: "Paula" }),
+    ]);
+    LedgerEntryModel.aggregate
+      .mockResolvedValueOnce([{ balance: 85 }])
+      .mockResolvedValueOnce([{ balance: 150 }]);
+
+    const result = await executeGraphQL(`
+      query {
+        accounts(page: 2, limit: 2) {
+          id
+          holderName
+          balance
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    expect(AccountModel.find).toHaveBeenCalledWith(
+      {},
+      null,
+      { limit: 2, skip: 2, sort: { createdAt: -1 } },
+    );
+    expect(LedgerEntryModel.aggregate).toHaveBeenCalledTimes(2);
+    expect(result.data).toEqual({
+      accounts: [
+        { id: "account-11", holderName: "Lucas", balance: 85 },
+        { id: "account-12", holderName: "Paula", balance: 150 },
+      ],
+    });
+  });
+
   it("lista contas pelo root query", async () => {
     AccountModel.find.mockResolvedValue([
       createAccountDocument({ id: "account-1", holderName: "Joao" }),
@@ -162,6 +196,42 @@ describe("QueryType", () => {
         amount: 300,
         description: "TED",
       },
+    });
+  });
+
+  it("lista transacoes paginadas com page e limit", async () => {
+    TransactionModel.find.mockResolvedValue([
+      createTransactionDocument({
+        id: "transaction-3",
+        amount: 90,
+        description: "Pix",
+      }),
+    ]);
+
+    const result = await executeGraphQL(`
+      query {
+        transactions(page: 3, limit: 1) {
+          id
+          amount
+          description
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    expect(TransactionModel.find).toHaveBeenCalledWith(
+      {},
+      null,
+      { limit: 1, skip: 2, sort: { createdAt: -1 } },
+    );
+    expect(result.data).toEqual({
+      transactions: [
+        {
+          id: "transaction-3",
+          amount: 90,
+          description: "Pix",
+        },
+      ],
     });
   });
 });

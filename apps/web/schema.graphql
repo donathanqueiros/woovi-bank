@@ -1,9 +1,9 @@
 type Query {
   me: Me
   account(id: ID!): Account
-  accounts: [Account!]!
+  accounts(page: Int, limit: Int): [Account!]!
   transaction(id: ID!): Transaction
-  transactions: [Transaction!]!
+  transactions(page: Int, limit: Int, accountId: ID): [Transaction!]!
 }
 
 type Me {
