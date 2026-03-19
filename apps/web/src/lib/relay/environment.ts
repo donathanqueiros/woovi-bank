@@ -7,7 +7,7 @@ import {
 } from "relay-runtime";
 
 const GRAPHQL_URL =
-  process.env.NEXT_PUBLIC_GRAPHQL_URL ?? "http://localhost:4000/graphql";
+  import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:4000/graphql";
 
 const fetchGraphQL: FetchFunction = async (request, variables) => {
   const response = await fetch(GRAPHQL_URL, {

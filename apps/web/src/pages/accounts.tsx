@@ -5,10 +5,10 @@ import { Search, User, DollarSign, Calendar, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fetchQuery, graphql, useRelayEnvironment } from "react-relay";
-import type { pageAccountsQuery } from "./__generated__/pageAccountsQuery.graphql";
+import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
 
 const accountsPageQuery = graphql`
-  query pageAccountsQuery {
+  query accountsQuery {
     accounts {
       id
       holderName
@@ -18,7 +18,7 @@ const accountsPageQuery = graphql`
   }
 `;
 
-type Account = NonNullable<pageAccountsQuery["response"]["accounts"]>[number];
+type Account = NonNullable<accountsQuery["response"]["accounts"]>[number];
 
 function formatBalance(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -49,7 +49,7 @@ export default function AccountsPage() {
     setError(null);
 
     try {
-      const data = await fetchQuery<pageAccountsQuery>(
+      const data = await fetchQuery<accountsQuery>(
         relayEnvironment,
         accountsPageQuery,
         {},
@@ -72,7 +72,7 @@ export default function AccountsPage() {
   }, [loadAccounts]);
 
   const filtered = accounts.filter((acc) =>
-    acc.holderName.toLowerCase().includes(search.toLowerCase())
+    acc.holderName.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -96,7 +96,7 @@ export default function AccountsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
               "w-full rounded-lg border border-border bg-background pl-9 pr-4 py-2 text-sm",
-              "outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 transition-all"
+              "outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 transition-all",
             )}
           />
         </div>
@@ -173,7 +173,11 @@ export default function AccountsPage() {
         {/* Refresh button */}
         {!loading && !error && (
           <div className="flex justify-center">
-            <Button variant="outline" size="sm" onClick={() => void loadAccounts()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void loadAccounts()}
+            >
               Atualizar
             </Button>
           </div>
