@@ -41,6 +41,19 @@ Frontend em React 19, Vite e Relay.
 
 ---
 
+## Storybook
+
+- Storybook v10 está configurado em `.storybook/` e usa `@storybook/react-vite` + Tailwind CSS.
+- Crie stories sempre que um componente de UI for adicionado ou modificado em `src/components/`.
+- Coloque o arquivo de story ao lado do componente: `foo.stories.tsx` junto de `foo.tsx`.
+- Use `Meta` e `StoryObj` do `@storybook/react`; importe utilitários de teste (ex.: `fn`) de `storybook/test`.
+- Inclua ao menos: uma story `Playground` (controles livres), uma story por variante ou estado relevante, e uma story `Interactive` com `useState` quando o componente receber handlers.
+- Para componentes de layout/página, use `parameters: { layout: "fullscreen" }` e um decorator que simule o contexto necessário.
+- Não commite `storybook-static/` — está no `.gitignore`.
+- Rode `pnpm --dir apps/web build-storybook` para validar antes de concluir.
+
+---
+
 ## O que Não Fazer
 
 - Não mover lógica específica do app para `packages/*` sem reuso comprovado.
