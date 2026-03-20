@@ -9,7 +9,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://mongo1-q8w00csck48swgwg4wks0woc:27017/admin | grep 1",
+          "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://localhost:27017/admin | grep 1",
         ]
       interval: 5s
       timeout: 10s
@@ -31,7 +31,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://mongo2-q8w00csck48swgwg4wks0woc:27017/admin | grep 1",
+          "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://localhost:27017/admin | grep 1",
         ]
       interval: 5s
       timeout: 10s
