@@ -1,60 +1,62 @@
 services:
   mongo1:
     image: mongo:7
-    hostname: mongo1
+    container_name: mongo1
     command: ["mongod", "--replSet", "myReplicaSet", "--bind_ip_all", "--port", "27017"]
-    networks:
-      default:
-        aliases:
-          - mongo1
     ports:
       - "27017:27017"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://127.0.0.1:27017/admin | grep 1",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
     volumes:
       - mongo1_data:/data/db
 
   mongo2:
     image: mongo:7
-    hostname: mongo2
+    container_name: mongo2
     command: ["mongod", "--replSet", "myReplicaSet", "--bind_ip_all", "--port", "27017"]
     depends_on:
       mongo1:
-        condition: service_started
-    networks:
-      default:
-        aliases:
-          - mongo2
+        condition: service_healthy
     ports:
       - "27018:27017"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://127.0.0.1:27017/admin | grep 1",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
     volumes:
       - mongo2_data:/data/db
 
   mongodb-rs-init:
     image: mongo:7
+    container_name: mongodb-rs-init
     exclude_from_hc: true
     depends_on:
       mongo1:
-        condition: service_started
+        condition: service_healthy
       mongo2:
-        condition: service_started
+        condition: service_healthy
+    
     restart: "no"
     entrypoint:
       - bash
       - -lc
       - |
-        set -euo pipefail
-
-        echo "Waiting for mongo1..."
-        until mongosh --quiet mongodb://mongo1:27017/admin --eval "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)" >/dev/null 2>&1; do
-          sleep 2
-        done
-
-        echo "Waiting for mongo2..."
-        until mongosh --quiet mongodb://mongo2:27017/admin --eval "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)" >/dev/null 2>&1; do
-          sleep 2
-        done
-
-        echo "Initializing MongoDB replica set..."
-        mongosh --quiet mongodb://mongo1:27017/admin --eval '
+        echo "Waiting for MongoDB replica set init..."
+        mongosh --quiet mongodb://mongo1-q8w00csck48swgwg4wks0woc:27017/admin --eval '
           try {
             rs.status();
             print("Replica set already initialized");
@@ -62,23 +64,13 @@ services:
             rs.initiate({
               _id: "myReplicaSet",
               members: [
-                { _id: 0, host: "mongo1:27017" },
-                { _id: 1, host: "mongo2:27017" }
+                { _id: 0, host: "mongo1-q8w00csck48swgwg4wks0woc:27017" },
+                { _id: 1, host: "mongo2-q8w00csck48swgwg4wks0woc:27017" }
               ]
             });
             print("Replica set initialized");
           }
         '
-
-        echo "Waiting for PRIMARY election..."
-        until mongosh --quiet mongodb://mongo1:27017/admin --eval '
-          const primary = rs.status().members.some((member) => member.stateStr === "PRIMARY");
-          quit(primary ? 0 : 1);
-        ' >/dev/null 2>&1; do
-          sleep 2
-        done
-
-        echo "Replica set ready"
 
   server:
     build:
