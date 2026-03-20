@@ -12,9 +12,9 @@ services:
           "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://127.0.0.1:27017/admin | grep 1",
         ]
       interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 30s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
     volumes:
       - mongo1_data:/data/db
 
@@ -34,9 +34,9 @@ services:
           "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://127.0.0.1:27017/admin | grep 1",
         ]
       interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 30s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
     volumes:
       - mongo2_data:/data/db
 
