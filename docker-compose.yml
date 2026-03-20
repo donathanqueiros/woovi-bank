@@ -20,6 +20,7 @@ services:
 
   mongodb-rs-init:
     image: mongo:7
+    exclude_from_hc: true
     depends_on:
       mongo1:
         condition: service_started
