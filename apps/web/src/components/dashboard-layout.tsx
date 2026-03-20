@@ -1,7 +1,8 @@
-import { NavLink, Outlet, useNavigate } from "react-router";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import {
   ArrowRightLeft,
   Landmark,
+  Settings,
   ShieldCheck,
   User,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { graphqlRequest } from "@/lib/graphqlClient";
 
 const LOGOUT_MUTATION = `
@@ -48,6 +50,11 @@ const NAV_ITEMS = [
     label: "Perfil",
     icon: User,
   },
+  {
+    path: "/settings",
+    label: "Configuracoes",
+    icon: Settings,
+  },
 ];
 
 const ADMIN_ITEMS = [
@@ -58,9 +65,41 @@ const ADMIN_ITEMS = [
   },
 ];
 
+const PAGE_TITLES: Record<string, { title: string; description: string }> = {
+  "/accounts": {
+    title: "Contas",
+    description: "Consulta, busca e leitura do ecossistema de contas.",
+  },
+  "/transactions": {
+    title: "Historico",
+    description: "Visao de movimentacoes com leitura rapida de entradas e saidas.",
+  },
+  "/transfer": {
+    title: "Transferencias",
+    description: "Acao primaria para enviar valores entre contas.",
+  },
+  "/profile": {
+    title: "Perfil",
+    description: "Sessao, verificacao e seguranca da conta.",
+  },
+  "/admin": {
+    title: "Administracao",
+    description: "Controles sensiveis e operacoes restritas.",
+  },
+  "/settings": {
+    title: "Configuracoes",
+    description: "Preferencias visuais e ajustes de experiencia.",
+  },
+};
+
 export function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const pageMeta = PAGE_TITLES[location.pathname] ?? {
+    title: "Woovi Bank",
+    description: "Painel operacional da aplicacao.",
+  };
 
   async function handleLogout() {
     try {
@@ -74,28 +113,36 @@ export function DashboardLayout() {
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="px-2 py-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-amber-700">
+      <Sidebar variant="inset">
+        <SidebarHeader className="px-3 pb-4 pt-4">
+          <div className="rounded-[20px] border border-sidebar-border/80 bg-card/70 px-4 py-4 shadow-[0_18px_34px_-26px_color-mix(in_oklab,var(--foreground)_18%,transparent)]">
+            <p className="text-xs uppercase tracking-[0.28em] text-primary">
               Woovi Bank
             </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">
+            <p className="mt-3 text-sm font-semibold text-foreground">
               {user?.email}
             </p>
+            <div className="mt-3 flex items-center gap-2">
+              <Badge variant="secondary" className="rounded-full px-3 py-1">
+                {user?.role === "ADMIN" ? "Administrador" : "Operacao"}
+              </Badge>
+            </div>
           </div>
         </SidebarHeader>
 
-        <SidebarContent>
+        <SidebarContent className="px-2">
           <SidebarGroup>
             <SidebarGroupLabel>Navegacao</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-1.5">
                 {NAV_ITEMS.map((item) => (
                   <SidebarMenuItem key={item.path}>
                     <NavLink to={item.path}>
                       {({ isActive }) => (
-                        <SidebarMenuButton isActive={isActive}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          className="h-10 rounded-xl px-3 data-active:bg-sidebar-primary data-active:text-sidebar-primary-foreground data-active:shadow-[0_14px_28px_-20px_color-mix(in_oklab,var(--sidebar-primary)_55%,transparent)]"
+                        >
                           <item.icon />
                           <span>{item.label}</span>
                         </SidebarMenuButton>
@@ -111,12 +158,15 @@ export function DashboardLayout() {
             <SidebarGroup>
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="gap-1.5">
                   {ADMIN_ITEMS.map((item) => (
                     <SidebarMenuItem key={item.path}>
                       <NavLink to={item.path}>
                         {({ isActive }) => (
-                          <SidebarMenuButton isActive={isActive}>
+                          <SidebarMenuButton
+                            isActive={isActive}
+                            className="h-10 rounded-xl px-3 data-active:bg-sidebar-primary data-active:text-sidebar-primary-foreground data-active:shadow-[0_14px_28px_-20px_color-mix(in_oklab,var(--sidebar-primary)_55%,transparent)]"
+                          >
                             <item.icon />
                             <span>{item.label}</span>
                           </SidebarMenuButton>
@@ -130,31 +180,34 @@ export function DashboardLayout() {
           )}
         </SidebarContent>
 
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => void handleLogout()}>
-                <User />
-                <span>Sair</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+        <SidebarFooter className="px-3 pb-4">
+          <Button variant="outline" className="w-full justify-start" onClick={() => void handleLogout()}>
+            <User className="mr-2 size-4" />
+            Sair
+          </Button>
         </SidebarFooter>
 
         <SidebarRail />
       </Sidebar>
 
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
+      <SidebarInset className="min-h-svh">
+        <header className="sticky top-0 z-20 flex min-h-20 shrink-0 items-center gap-3 border-b border-border/70 bg-background/80 px-4 backdrop-blur md:px-6">
           <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <p className="text-sm text-muted-foreground">Woovi Bank</p>
+          <Separator orientation="vertical" className="mr-1 hidden h-5 md:block" />
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.24em] text-primary">
+              {pageMeta.title}
+            </p>
+            <p className="truncate text-sm text-muted-foreground">
+              {pageMeta.description}
+            </p>
+          </div>
           <Button size="sm" className="ml-auto" onClick={() => navigate("/transfer")}>
             Fazer transferencia
           </Button>
         </header>
 
-        <div className="flex-1 p-4 sm:p-6">
+        <div className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
           <Outlet />
         </div>
       </SidebarInset>

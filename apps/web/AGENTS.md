@@ -23,7 +23,6 @@ Frontend em React 19, Vite e Relay.
 
 ## Convenções
 
-- TDD não é obrigatório neste app; use quando fizer sentido para reduzir risco em mudanças críticas.
 - Preferir App Router e Server Components por padrão; use Client Components apenas quando houver necessidade real.
 - Preferir componentes do shadcn/ui e estilização com Tailwind CSS para construir e evoluir interfaces, mantendo consistência visual com o app.
 - Manter queries Relay co-localizadas com a tela ou componente consumidor.

@@ -3,9 +3,11 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Loader2,
+  TrendingUp,
 } from "lucide-react";
 import { requestSubscription, useRelayEnvironment } from "react-relay";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatBalance, formatDateTime } from "@/lib/formatters";
@@ -79,7 +81,6 @@ export default function TransactionsPage() {
     void loadTransactions();
   }, [loadTransactions]);
 
-  // Real-time subscription: reload when a transfer is received
   useEffect(() => {
     if (!user?.accountId) return;
 
@@ -124,35 +125,54 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Historico</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Extrato de entradas e saidas da sua conta.
-        </p>
-      </div>
+      <section className="rounded-[24px] border border-border/70 bg-card px-6 py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <Badge variant="secondary" className="rounded-full px-3 py-1">
+              Historico operacional
+            </Badge>
+            <h1>Transacoes recentes</h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              Entradas e saidas com valor, contraparte e data organizados para leitura imediata.
+            </p>
+          </div>
+          <div className="rounded-[20px] border border-border/70 bg-background/80 px-5 py-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+              Volume
+            </p>
+            <p className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{totalCount}</p>
+            <p className="text-sm text-muted-foreground">transacoes no recorte atual</p>
+          </div>
+        </div>
+      </section>
 
-      <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
-        {loading && (
+      <section className="space-y-4 rounded-[24px] border border-border/70 bg-card p-5">
+        {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
             <span className="text-sm">Carregando transacoes...</span>
           </div>
-        )}
+        ) : null}
 
-        {!loading && error && (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        {!loading && error ? (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/8 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
-        )}
+        ) : null}
 
-        {!loading && !error && sortedTransactions.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-            Sem transacoes para exibir no momento.
-          </p>
-        )}
+        {!loading && !error && sortedTransactions.length === 0 ? (
+          <div className="rounded-[20px] border border-dashed border-border bg-background/60 px-5 py-10 text-center">
+            <p className="text-sm font-medium text-foreground">
+              Sem transacoes para exibir no momento.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Novas movimentacoes aparecerao aqui automaticamente.
+            </p>
+          </div>
+        ) : null}
 
-        {!loading && !error && sortedTransactions.length > 0 && (
-          <ul className="space-y-2">
+        {!loading && !error && sortedTransactions.length > 0 ? (
+          <div className="space-y-3">
             {sortedTransactions.map((transaction) => {
               const outgoing = transaction.fromAccount.id === user?.accountId;
               const counterpart = outgoing
@@ -160,18 +180,18 @@ export default function TransactionsPage() {
                 : transaction.fromAccount.holderName;
 
               return (
-                <li
+                <article
                   key={transaction.id}
-                  className="rounded-xl border border-border bg-background px-3 py-3"
+                  className="rounded-[20px] border border-border/70 bg-background/80 px-4 py-4 transition-all duration-200 hover:border-primary/15 hover:shadow-[0_18px_38px_-30px_color-mix(in_oklab,var(--foreground)_16%,transparent)]"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
                       <div
                         className={cn(
-                          "flex size-8 items-center justify-center rounded-full",
+                          "mt-0.5 flex size-11 items-center justify-center rounded-2xl",
                           outgoing
-                            ? "bg-rose-100 text-rose-700"
-                            : "bg-emerald-100 text-emerald-700",
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-[var(--success)]/12 text-[var(--success)]",
                         )}
                       >
                         {outgoing ? (
@@ -180,43 +200,50 @@ export default function TransactionsPage() {
                           <ArrowDownLeft className="size-4" />
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium leading-none">
-                          {outgoing ? "Transferencia enviada" : "Transferencia recebida"}
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">
+                            {outgoing ? "Transferencia enviada" : "Transferencia recebida"}
+                          </p>
+                          <Badge variant={outgoing ? "destructive" : "success"}>
+                            {outgoing ? "Saida" : "Entrada"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Contraparte: {counterpart}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Conta: {counterpart}
-                        </p>
+                        {transaction.description ? (
+                          <p className="text-sm leading-6 text-muted-foreground">
+                            {transaction.description}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 
                     <div className="text-right">
                       <p
                         className={cn(
-                          "text-sm font-semibold",
-                          outgoing ? "text-rose-700" : "text-emerald-700",
+                          "text-lg font-semibold tracking-[-0.03em]",
+                          outgoing ? "text-destructive" : "text-[var(--success)]",
                         )}
                       >
                         {outgoing ? "-" : "+"}
                         {formatBalance(transaction.amount)}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-secondary/80 px-3 py-1 text-xs text-secondary-foreground">
+                        <TrendingUp className="size-3.5" />
                         {formatDateTime(transaction.createdAt)}
-                      </p>
+                      </div>
                     </div>
                   </div>
-
-                  {transaction.description && (
-                    <p className="mt-2 text-xs text-slate-600">{transaction.description}</p>
-                  )}
-                </li>
+                </article>
               );
             })}
-          </ul>
-        )}
+          </div>
+        ) : null}
 
-        <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-          <p className="text-xs text-muted-foreground">
+        <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-4">
+          <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
             Pagina {page} de {totalPages}
           </p>
           <div className="flex items-center gap-2">
@@ -238,7 +265,7 @@ export default function TransactionsPage() {
             </Button>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

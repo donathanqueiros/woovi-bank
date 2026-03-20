@@ -11,7 +11,11 @@ import TransactionsPage from "./pages/transactions.tsx";
 import TransferPage from "./pages/transfer.tsx";
 import ProfilePage from "./pages/profile.tsx";
 import AdminPage from "./pages/admin.tsx";
+import SettingsPage from "./pages/settings.tsx";
 import { ProtectedDashboardLayout, ProtectedKycRoute } from "./routes/protected-routes.tsx";
+import { initializeTheme } from "./lib/theme.ts";
+
+initializeTheme();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -27,6 +31,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/transfer" element={<TransferPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="/kyc" element={<ProtectedKycRoute />} />
           </Routes>

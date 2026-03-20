@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { RelayEnvironmentProvider } from "react-relay";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/theme-provider";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -12,13 +13,15 @@ type ProvidersProps = {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <AuthProvider>
-      <RelayEnvironmentProvider environment={relayEnvironment}>
-        <TooltipProvider>
-          {children}
-          <Toaster richColors position="top-right" />
-        </TooltipProvider>
-      </RelayEnvironmentProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RelayEnvironmentProvider environment={relayEnvironment}>
+          <TooltipProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </TooltipProvider>
+        </RelayEnvironmentProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

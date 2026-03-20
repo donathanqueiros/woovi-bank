@@ -1,5 +1,6 @@
 import AuthPage from "@/pages/auth";
 import KycPage from "@/pages/kyc";
+import AccountsListPage from "@/pages/accounts-list";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useAuth } from "@/lib/use-auth";
 
@@ -29,7 +30,7 @@ export function ProtectedKycRoute() {
   }
 
   if (user?.kycStatus === "APPROVED") {
-    return <AccountsPage />;
+    return <AccountsListPage />;
   }
 
   return <KycPage />;
