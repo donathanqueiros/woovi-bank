@@ -300,6 +300,15 @@ export default function AccountsPage() {
     [accounts, user?.accountId],
   );
   const hasKnownTransferRecipients = transferableAccounts.length > 0;
+  const hasSelectedDestination = transferTo.trim().length > 0;
+  const transferAmountError = useMemo(
+    () =>
+      getTransferValidationMessage({
+        amount: transferAmount,
+        balance: myAccount?.balance,
+      }),
+    [myAccount?.balance, transferAmount],
+  );
 
   const sidebarItems = useMemo<SidebarItem[]>(() => {
     const items: SidebarItem[] = [
@@ -505,14 +514,9 @@ export default function AccountsPage() {
       return;
     }
 
-    const validationMessage = getTransferValidationMessage({
-      amount: transferAmount,
-      balance: myAccount?.balance,
-    });
-
-    if (validationMessage) {
+    if (transferAmountError) {
       setTransferFeedbackTone("error");
-      setTransferFeedback(validationMessage);
+      setTransferFeedback(transferAmountError);
       return;
     }
 
@@ -721,8 +725,17 @@ export default function AccountsPage() {
                   min={0.01}
                   step="0.01"
                   value={transferAmount}
-                  onChange={(event) => setTransferAmount(event.target.value)}
+                  onChange={(event) => {
+                    setTransferAmount(event.target.value);
+
+                    if (transferFeedbackTone === "success") {
+                      setTransferFeedback(null);
+                    }
+                  }}
                 />
+                {transferAmountError ? (
+                  <p className="mt-1 text-xs text-destructive">{transferAmountError}</p>
+                ) : null}
               </label>
 
               <label className="text-sm">
@@ -736,11 +749,16 @@ export default function AccountsPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <Button onClick={() => void handleTransfer()} disabled={transferLoading}>
+              <Button
+                onClick={() => void handleTransfer()}
+                disabled={
+                  transferLoading || !hasSelectedDestination || Boolean(transferAmountError)
+                }
+              >
                 <SendHorizontal className="mr-2 h-4 w-4" />
                 {transferLoading ? "Transferindo..." : "Transferir agora"}
               </Button>
-              {transferFeedback ? (
+              {!transferAmountError && transferFeedback ? (
                 <p
                   className={cn(
                     "text-sm",

@@ -78,6 +78,15 @@ export default function TransferPage() {
     [accounts, user?.accountId],
   );
   const hasKnownRecipients = otherAccounts.length > 0;
+  const hasSelectedDestination = transferTo.trim().length > 0;
+  const transferAmountError = useMemo(
+    () =>
+      getTransferValidationMessage({
+        amount: transferAmount,
+        balance: myAccount?.balance,
+      }),
+    [myAccount?.balance, transferAmount],
+  );
 
   async function handleTransfer() {
     if (!user) return;
@@ -89,14 +98,9 @@ export default function TransferPage() {
       return;
     }
 
-    const validationMessage = getTransferValidationMessage({
-      amount: transferAmount,
-      balance: myAccount?.balance,
-    });
-
-    if (validationMessage) {
+    if (transferAmountError) {
       setFeedbackTone("error");
-      setFeedback(validationMessage);
+      setFeedback(transferAmountError);
       return;
     }
 
@@ -191,8 +195,15 @@ export default function TransferPage() {
                 min={0.01}
                 step="0.01"
                 value={transferAmount}
-                onChange={(e) => setTransferAmount(e.target.value)}
+                onChange={(e) => {
+                  setTransferAmount(e.target.value);
+
+                  if (feedbackTone === "success") {
+                    setFeedback(null);
+                  }
+                }}
               />
+              {transferAmountError ? <p className="text-xs text-destructive">{transferAmountError}</p> : null}
             </label>
 
             <label className="space-y-2 text-sm font-medium md:col-span-2">
@@ -205,7 +216,7 @@ export default function TransferPage() {
             </label>
           </div>
 
-          {feedback ? (
+          {!transferAmountError && feedback ? (
             <p
               className={cn(
                 "mt-4 rounded-2xl border px-4 py-3 text-sm",
@@ -219,7 +230,10 @@ export default function TransferPage() {
           ) : null}
 
           <div className="mt-6 flex justify-end">
-            <Button onClick={() => void handleTransfer()} disabled={loading}>
+            <Button
+              onClick={() => void handleTransfer()}
+              disabled={loading || !hasSelectedDestination || Boolean(transferAmountError)}
+            >
               <SendHorizontal className="mr-2 size-4" />
               {loading ? "Transferindo..." : "Transferir agora"}
             </Button>
