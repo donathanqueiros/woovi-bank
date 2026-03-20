@@ -5,6 +5,7 @@ jest.mock("../../modules/sessions/sessionService", () => ({
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { app } from "../app";
+import { config } from "../../config";
 import { findValidSession } from "../../modules/sessions/sessionService";
 
 const findValidSessionMock = findValidSession as jest.MockedFunction<
@@ -14,6 +15,24 @@ const findValidSessionMock = findValidSession as jest.MockedFunction<
 describe("server app", () => {
 	let server: Server;
 	let baseUrl: string;
+	const originalNodeEnv = process.env.NODE_ENV;
+
+	app.use(async (ctx, next) => {
+		if (ctx.path !== "/__test_session_cookie") {
+			await next();
+			return;
+		}
+
+		ctx.cookies.set(config.SESSION_COOKIE_NAME, "session-token", {
+			httpOnly: true,
+			signed: true,
+			sameSite: "lax",
+			secure: process.env.NODE_ENV === "production",
+			expires: new Date("2026-12-31T00:00:00.000Z"),
+			overwrite: true,
+		});
+		ctx.status = 204;
+	});
 
 	beforeAll(async () => {
 		server = createServer(app.callback());
@@ -27,6 +46,8 @@ describe("server app", () => {
 	});
 
 	afterAll(async () => {
+		process.env.NODE_ENV = originalNodeEnv;
+
 		await new Promise<void>((resolve, reject) => {
 			server.close((error) => {
 				if (error) {
@@ -78,5 +99,22 @@ describe("server app", () => {
 		expect(response.headers.get("content-type")).toContain("text/html");
 		expect(responseText).toContain("Apollo Sandbox");
 		expect(responseText).toContain("new window.EmbeddedSandbox");
+	});
+
+	it("accepts secure session cookies in production behind a trusted proxy", async () => {
+		process.env.NODE_ENV = "production";
+
+		const response = await fetch(`${baseUrl}/__test_session_cookie`, {
+			method: "GET",
+			headers: {
+				"x-forwarded-proto": "https",
+			},
+		});
+
+		expect(response.status).toBe(204);
+		expect(response.headers.get("set-cookie")).toContain(
+			`${config.SESSION_COOKIE_NAME}=`,
+		);
+		expect(response.headers.get("set-cookie")).toContain("secure");
 	});
 });

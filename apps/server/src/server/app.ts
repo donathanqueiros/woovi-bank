@@ -11,6 +11,9 @@ import type { GraphQLContext } from "../types/auth";
 
 const app = new Koa();
 
+// Production traffic reaches Koa through a reverse proxy/load balancer.
+app.proxy = true;
+
 function readRawRequestBody(req: Koa.Request["req"]) {
 	return new Promise<Buffer>((resolve, reject) => {
 		const chunks: Buffer[] = [];
