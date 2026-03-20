@@ -1,16 +1,24 @@
-import type { accountsDepositConfirmedSubscription } from "@/pages/__generated__/accountsDepositConfirmedSubscription.graphql";
-import type { accountsTransferReceivedSubscription } from "@/pages/__generated__/accountsTransferReceivedSubscription.graphql";
-
 export const ACCOUNT_TRANSFER_RECEIVED_EVENT = "woovi-bank:transfer-received";
 export const ACCOUNT_DEPOSIT_CONFIRMED_EVENT = "woovi-bank:deposit-confirmed";
 
-export type AccountTransferReceivedDetail = NonNullable<
-  accountsTransferReceivedSubscription["response"]["transferReceived"]
->;
+export type AccountTransferReceivedDetail = {
+  transactionId: string;
+  fromAccountId: string;
+  fromAccountHolderName: string;
+  toAccountId: string;
+  amount: number;
+  description?: string | null;
+  createdAt: string;
+};
 
-export type AccountDepositConfirmedDetail = NonNullable<
-  accountsDepositConfirmedSubscription["response"]["depositConfirmed"]
->;
+export type AccountDepositConfirmedDetail = {
+  depositId: string;
+  accountId: string;
+  correlationID: string;
+  amount: number;
+  createdAt: string;
+  completedAt: string;
+};
 
 export function dispatchAccountTransferReceived(detail: AccountTransferReceivedDetail) {
   if (typeof window === "undefined") {

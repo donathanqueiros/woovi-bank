@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { requestSubscription, useRelayEnvironment } from "react-relay";
+import { graphql, requestSubscription, useRelayEnvironment } from "react-relay";
 import { toast } from "sonner";
 import { formatBalance, formatDateTime } from "@/lib/formatters";
 import {
@@ -7,10 +7,35 @@ import {
   dispatchAccountTransferReceived,
 } from "@/lib/account-notification-events";
 import { useAuth } from "@/lib/use-auth";
-import depositConfirmedSubscriptionNode from "@/pages/__generated__/accountsDepositConfirmedSubscription.graphql";
-import transferReceivedSubscriptionNode from "@/pages/__generated__/accountsTransferReceivedSubscription.graphql";
-import type { accountsDepositConfirmedSubscription } from "@/pages/__generated__/accountsDepositConfirmedSubscription.graphql";
-import type { accountsTransferReceivedSubscription } from "@/pages/__generated__/accountsTransferReceivedSubscription.graphql";
+import type { accountNotificationsDepositConfirmedSubscription } from "./__generated__/accountNotificationsDepositConfirmedSubscription.graphql";
+import type { accountNotificationsTransferReceivedSubscription } from "./__generated__/accountNotificationsTransferReceivedSubscription.graphql";
+
+const transferReceivedSubscriptionNode = graphql`
+  subscription accountNotificationsTransferReceivedSubscription($accountId: ID!) {
+    transferReceived(accountId: $accountId) {
+      transactionId
+      fromAccountId
+      fromAccountHolderName
+      toAccountId
+      amount
+      description
+      createdAt
+    }
+  }
+`;
+
+const depositConfirmedSubscriptionNode = graphql`
+  subscription accountNotificationsDepositConfirmedSubscription($accountId: ID!) {
+    depositConfirmed(accountId: $accountId) {
+      depositId
+      accountId
+      correlationID
+      amount
+      createdAt
+      completedAt
+    }
+  }
+`;
 
 export function AccountNotifications() {
   const relayEnvironment = useRelayEnvironment();
@@ -21,7 +46,7 @@ export function AccountNotifications() {
       return;
     }
 
-    const subscription = requestSubscription<accountsTransferReceivedSubscription>(
+    const subscription = requestSubscription<accountNotificationsTransferReceivedSubscription>(
       relayEnvironment,
       {
         subscription: transferReceivedSubscriptionNode,
@@ -55,7 +80,7 @@ export function AccountNotifications() {
       return;
     }
 
-    const subscription = requestSubscription<accountsDepositConfirmedSubscription>(
+    const subscription = requestSubscription<accountNotificationsDepositConfirmedSubscription>(
       relayEnvironment,
       {
         subscription: depositConfirmedSubscriptionNode,
