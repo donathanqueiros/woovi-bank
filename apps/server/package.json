@@ -4,12 +4,11 @@
   "description": "",
   "license": "ISC",
   "author": "",
-  "type": "module",
   "main": "index.ts",
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon --watch src --ext ts --exec \"tsx\" src/index.ts",
-    "build": "tsc",
+    "build": "tsc --noEmit && esbuild src/index.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/index.js",
     "postman:export": "tsx src/scripts/exportPostmanCollection.ts",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -34,6 +33,7 @@
   "devDependencies": {
     "@types/dotenv-safe": "^9.1.0",
     "@types/jest": "^30.0.0",
+    "esbuild": "^0.25.0",
     "@types/koa": "^3.0.2",
     "@types/koa-logger": "^3.1.5",
     "@types/koa-mount": "^4.0.5",
