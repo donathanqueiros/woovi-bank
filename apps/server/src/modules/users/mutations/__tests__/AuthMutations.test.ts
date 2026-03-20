@@ -72,7 +72,8 @@ const SessionModel = Session as unknown as {
 
 describe("Auth mutations", () => {
   afterEach(() => {
-    delete process.env.INITIAL_ADMIN_EMAILS;
+    delete process.env.ADM_EMAIL;
+    delete process.env.ADM_PASSWORD;
   });
 
   it("cria usuario com conta inicial de 1000", async () => {
@@ -167,14 +168,15 @@ describe("Auth mutations", () => {
     });
   });
 
-  it("promove email configurado por env para admin no signup", async () => {
-    process.env.INITIAL_ADMIN_EMAILS = "admin@woovi.com";
+  it("mantem signup como usuario mesmo quando o email bate com o admin configurado", async () => {
+    process.env.ADM_EMAIL = "admin@woovi.com";
+    process.env.ADM_PASSWORD = "StrongPass123";
     const setSessionCookie = jest.fn();
     const endSession = jest.fn();
     const userDoc = {
       id: "user-admin",
       email: "admin@woovi.com",
-      role: "ADMIN",
+      role: "USER",
       active: true,
       save: jest.fn().mockResolvedValue(undefined),
     };
@@ -199,7 +201,7 @@ describe("Auth mutations", () => {
     SessionModel.create.mockResolvedValue({
       token: "session-token-admin",
       userId: "user-admin",
-      role: "ADMIN",
+      role: "USER",
       expiresAt: new Date("2026-12-31T00:00:00.000Z"),
     });
 
@@ -226,12 +228,12 @@ describe("Auth mutations", () => {
     expect(result.errors).toBeUndefined();
     expect(UserModel).toHaveBeenCalledWith(
       expect.objectContaining({
-        role: "ADMIN",
+        role: "USER",
       }),
     );
     expect(SessionModel.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        role: "ADMIN",
+        role: "USER",
       }),
     );
     expect(endSession).toHaveBeenCalledTimes(1);
@@ -240,7 +242,7 @@ describe("Auth mutations", () => {
         user: {
           id: "user-admin",
           email: "admin@woovi.com",
-          role: "ADMIN",
+          role: "USER",
         },
       },
     });

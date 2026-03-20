@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "@/lib/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getKycActionCopy, KYC_ROUTE } from "@/pages/kyc/kyc-access";
 
 export default function App() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function App() {
     UNDER_REVIEW: "info",
     REJECTED: "destructive",
   };
+  const kycAction = getKycActionCopy(user?.kycStatus);
 
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10">
@@ -38,8 +40,8 @@ export default function App() {
                 Verifique sua identidade para liberar todos os recursos operacionais.
               </span>
             </div>
-            <Button size="sm" onClick={() => navigate("/kyc")}>
-              Verificar agora
+            <Button size="sm" onClick={() => navigate(KYC_ROUTE)}>
+              {kycAction.label}
             </Button>
           </div>
         ) : null}

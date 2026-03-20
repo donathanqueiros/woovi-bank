@@ -4,10 +4,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { StepIndicator } from "@/components/kyc/step-indicator";
 import { PersonalInfoStep } from "./kyc/PersonalInfoStep";
 import { AddressStep } from "./kyc/AddressStep";
@@ -23,7 +24,11 @@ import {
   reviewSchema,
   type KycFormData,
 } from "./kyc/kyc-schemas";
+import { serializeKycDraft } from "./kyc/kyc-draft";
 import { graphqlRequest } from "@/lib/graphqlClient";
+import { useAuth } from "@/lib/use-auth";
+import { getKycActionCopy, getKycPageMode, KYC_ROUTE } from "./kyc/kyc-access";
+import type { KycStatus } from "@/lib/auth-storage";
 
 const DRAFT_KEY = "kyc-draft";
 const TOTAL_STEPS = 5;
@@ -79,6 +84,34 @@ const SUBMIT_KYC_MUTATION = `
   }
 `;
 
+const MY_KYC_QUERY = `
+  query MyKyc {
+    myKyc {
+      id
+      status
+      submittedAt
+      reviewNotes
+      personalInfo {
+        fullName
+        email
+        phone
+        dateOfBirth
+        country
+      }
+      address {
+        street
+        city
+        state
+        postalCode
+      }
+      identity {
+        idType
+        idNumber
+      }
+    }
+  }
+`;
+
 const slideVariants = {
   enter: (dir: number) => ({
     x: dir > 0 ? "100%" : "-100%",
@@ -89,6 +122,66 @@ const slideVariants = {
     x: dir > 0 ? "-100%" : "100%",
     opacity: 0,
   }),
+};
+
+const kycStatusLabel: Record<string, string> = {
+  PENDING_SUBMISSION: "Nao iniciado",
+  UNDER_REVIEW: "Em analise",
+  REJECTED: "Rejeitado",
+  APPROVED: "Aprovado",
+};
+
+const kycStatusVariant: Record<string, "warning" | "info" | "destructive" | "success"> = {
+  PENDING_SUBMISSION: "warning",
+  UNDER_REVIEW: "info",
+  REJECTED: "destructive",
+  APPROVED: "success",
+};
+
+const idTypeLabel: Record<string, string> = {
+  PASSPORT: "Passaporte",
+  DRIVERS_LICENSE: "CNH",
+  RG: "RG",
+};
+
+function formatSubmittedAt(value?: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleString("pt-BR");
+}
+
+type MyKycData = {
+  myKyc: {
+    id: string;
+    status: KycStatus;
+    submittedAt: string | null;
+    reviewNotes: string | null;
+    personalInfo?: {
+      fullName?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      dateOfBirth?: string | null;
+      country?: string | null;
+    } | null;
+    address?: {
+      street?: string | null;
+      city?: string | null;
+      state?: string | null;
+      postalCode?: string | null;
+    } | null;
+    identity?: {
+      idType?: string | null;
+      idNumber?: string | null;
+    } | null;
+  } | null;
 };
 
 function fileToBase64(file: File): Promise<string> {
@@ -103,10 +196,16 @@ function fileToBase64(file: File): Promise<string> {
 export default function KycPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user, setUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingKyc, setIsLoadingKyc] = useState(false);
+  const [submittedKyc, setSubmittedKyc] = useState<MyKycData["myKyc"]>(null);
+  const [kycLoadError, setKycLoadError] = useState<string | null>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pageMode = getKycPageMode(user?.kycStatus);
+  const kycAction = getKycActionCopy(user?.kycStatus);
 
   const {
     control,
@@ -136,13 +235,10 @@ export default function KycPage() {
     const subscription = watch((values) => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
       draftTimerRef.current = setTimeout(() => {
-        const { selfieBase64, frontImageFile, backImageFile, proofDocumentFile, ...textValues } =
-          values as KycFormData;
-        void selfieBase64;
-        void frontImageFile;
-        void backImageFile;
-        void proofDocumentFile;
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(textValues));
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify(serializeKycDraft(values as KycFormData)),
+        );
       }, 500);
     });
 
@@ -151,6 +247,47 @@ export default function KycPage() {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     };
   }, [watch]);
+
+  useEffect(() => {
+    if (pageMode !== "readonly") {
+      setSubmittedKyc(null);
+      setKycLoadError(null);
+      setIsLoadingKyc(false);
+      return;
+    }
+
+    let active = true;
+
+    setIsLoadingKyc(true);
+    setKycLoadError(null);
+
+    void graphqlRequest<MyKycData>(MY_KYC_QUERY, {})
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+
+        setSubmittedKyc(data.myKyc);
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+
+        setKycLoadError(
+          error instanceof Error ? error.message : "Nao foi possivel carregar os dados do KYC.",
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoadingKyc(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [pageMode]);
 
   const stepLabels = [
     t("kyc.steps.personalInfo"),
@@ -214,7 +351,12 @@ export default function KycPage() {
             : Promise.resolve(null),
         ]);
 
-      await graphqlRequest(SUBMIT_KYC_MUTATION, {
+      const response = await graphqlRequest<{
+        SubmitKyc: {
+          id: string;
+          status: KycStatus;
+        };
+      }>(SUBMIT_KYC_MUTATION, {
         fullName: data.fullName,
         email: data.email,
         phone: data.phone,
@@ -234,10 +376,16 @@ export default function KycPage() {
       });
 
       localStorage.removeItem(DRAFT_KEY);
+      if (user) {
+        setUser({
+          ...user,
+          kycStatus: response.SubmitKyc.status,
+        });
+      }
       toast.success(t("kyc.success.title"), {
         description: t("kyc.success.description"),
       });
-      navigate("/accounts");
+      navigate(KYC_ROUTE);
     } catch (err) {
       const msg = err instanceof Error ? err.message : t("kyc.error.submit");
       toast.error(msg);
@@ -261,6 +409,122 @@ export default function KycPage() {
       onEditStep={handleEditStep}
     />,
   ];
+
+  if (pageMode === "readonly") {
+    return (
+      <main className="min-h-screen bg-background px-4 py-8 sm:py-12">
+        <div className="mx-auto max-w-3xl space-y-6">
+          <section className="rounded-[28px] border border-border/70 bg-card px-6 py-7 shadow-sm sm:px-8">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3">
+                <Badge variant="secondary" className="rounded-full px-3 py-1">
+                  KYC
+                </Badge>
+                <div>
+                  <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
+                    Dados enviados para verificacao
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    {kycAction.description}
+                  </p>
+                </div>
+                {user?.kycStatus ? (
+                  <Badge variant={kycStatusVariant[user.kycStatus] ?? "secondary"}>
+                    {kycStatusLabel[user.kycStatus] ?? user.kycStatus}
+                  </Badge>
+                ) : null}
+              </div>
+
+              <div className="flex size-14 items-center justify-center rounded-[20px] bg-primary/10 text-primary">
+                <ShieldCheck className="size-7" />
+              </div>
+            </div>
+          </section>
+
+          {isLoadingKyc ? (
+            <section className="rounded-[24px] border border-border/70 bg-card p-6 text-sm text-muted-foreground">
+              Carregando os dados enviados...
+            </section>
+          ) : null}
+
+          {!isLoadingKyc && kycLoadError ? (
+            <section className="rounded-[24px] border border-destructive/25 bg-card p-6 text-sm text-destructive">
+              {kycLoadError}
+            </section>
+          ) : null}
+
+          {!isLoadingKyc && !kycLoadError && submittedKyc ? (
+            <div className="grid gap-4">
+              <article className="rounded-[24px] border border-border/70 bg-card p-6">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="size-5 text-primary" />
+                  <div>
+                    <h2 className="text-lg font-medium text-foreground">Resumo da solicitacao</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Revise os dados atualmente registrados para sua conta.
+                    </p>
+                  </div>
+                </div>
+
+                <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <ReadonlyField label="Status" value={kycStatusLabel[submittedKyc.status]} />
+                  <ReadonlyField
+                    label="Enviado em"
+                    value={formatSubmittedAt(submittedKyc.submittedAt)}
+                  />
+                  <ReadonlyField label="Observacoes" value={submittedKyc.reviewNotes ?? "Sem observacoes"} />
+                </dl>
+              </article>
+
+              <article className="rounded-[24px] border border-border/70 bg-card p-6">
+                <h2 className="text-lg font-medium text-foreground">Dados pessoais</h2>
+                <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <ReadonlyField label="Nome completo" value={submittedKyc.personalInfo?.fullName} />
+                  <ReadonlyField label="Email" value={submittedKyc.personalInfo?.email} />
+                  <ReadonlyField label="Telefone" value={submittedKyc.personalInfo?.phone} />
+                  <ReadonlyField label="Data de nascimento" value={submittedKyc.personalInfo?.dateOfBirth} />
+                  <ReadonlyField label="Pais" value={submittedKyc.personalInfo?.country} />
+                </dl>
+              </article>
+
+              <article className="rounded-[24px] border border-border/70 bg-card p-6">
+                <h2 className="text-lg font-medium text-foreground">Endereco</h2>
+                <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <ReadonlyField label="Rua" value={submittedKyc.address?.street} />
+                  <ReadonlyField label="Cidade" value={submittedKyc.address?.city} />
+                  <ReadonlyField label="Estado" value={submittedKyc.address?.state} />
+                  <ReadonlyField label="CEP" value={submittedKyc.address?.postalCode} />
+                </dl>
+              </article>
+
+              <article className="rounded-[24px] border border-border/70 bg-card p-6">
+                <h2 className="text-lg font-medium text-foreground">Documento</h2>
+                <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <ReadonlyField
+                    label="Tipo de documento"
+                    value={submittedKyc.identity?.idType ? (idTypeLabel[submittedKyc.identity.idType] ?? submittedKyc.identity.idType) : undefined}
+                  />
+                  <ReadonlyField label="Numero do documento" value={submittedKyc.identity?.idNumber} />
+                </dl>
+              </article>
+            </div>
+          ) : null}
+
+          {!isLoadingKyc && !kycLoadError && !submittedKyc ? (
+            <section className="rounded-[24px] border border-border/70 bg-card p-6 text-sm text-muted-foreground">
+              Nenhum dado de KYC foi encontrado para esta conta no momento.
+            </section>
+          ) : null}
+
+          <div className="flex justify-start">
+            <Button variant="outline" onClick={() => navigate("/profile")}>
+              Voltar ao perfil
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:py-12">
@@ -335,5 +599,14 @@ export default function KycPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+function ReadonlyField({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="rounded-[20px] border border-border/70 bg-background/80 p-4">
+      <dt className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{label}</dt>
+      <dd className="mt-2 text-sm font-medium text-foreground">{value || "-"}</dd>
+    </div>
   );
 }

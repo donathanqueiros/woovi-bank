@@ -35,13 +35,14 @@ export const Default: Story = {
 
 export const WithCapture: Story = {
   args: {
+    value: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==",
     onCapture: fn(),
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Triggers onCapture with a base64 string when the user clicks the capture button.",
+          "Shows the captured preview state when the form already has a selfie saved.",
       },
     },
   },

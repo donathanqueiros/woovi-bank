@@ -79,6 +79,10 @@ export function DashboardLayout() {
       title: t("dashboard.pages.profile.title"),
       description: t("dashboard.pages.profile.description"),
     },
+    "/profile/kyc": {
+      title: "KYC",
+      description: "Acompanhe e revise os dados enviados para verificacao.",
+    },
     "/admin": {
       title: t("dashboard.pages.admin.title"),
       description: t("dashboard.pages.admin.description"),

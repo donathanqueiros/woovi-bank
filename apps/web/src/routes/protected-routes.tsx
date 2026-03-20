@@ -1,8 +1,9 @@
 import AuthPage from "@/pages/auth";
 import KycPage from "@/pages/kyc";
-import AccountsListPage from "@/pages/accounts-list";
+import { Navigate } from "react-router";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useAuth } from "@/lib/use-auth";
+import { KYC_ROUTE } from "@/pages/kyc/kyc-access";
 
 export function ProtectedDashboardLayout() {
   const { isAuthenticated, isBootstrapping } = useAuth();
@@ -19,7 +20,7 @@ export function ProtectedDashboardLayout() {
 }
 
 export function ProtectedKycRoute() {
-  const { isAuthenticated, isBootstrapping, user } = useAuth();
+  const { isAuthenticated, isBootstrapping } = useAuth();
 
   if (isBootstrapping) {
     return <div className="px-4 py-10 text-sm">Carregando sessao...</div>;
@@ -29,9 +30,19 @@ export function ProtectedKycRoute() {
     return <AuthPage />;
   }
 
-  if (user?.kycStatus === "APPROVED") {
-    return <AccountsListPage />;
+  return <KycPage />;
+}
+
+export function LegacyKycRouteRedirect() {
+  const { isAuthenticated, isBootstrapping } = useAuth();
+
+  if (isBootstrapping) {
+    return <div className="px-4 py-10 text-sm">Carregando sessao...</div>;
   }
 
-  return <KycPage />;
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
+  return <Navigate replace to={KYC_ROUTE} />;
 }

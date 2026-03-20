@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 
 type CameraCaptureProps = {
   onCapture: (base64: string) => void;
+  value?: string | null;
   className?: string;
 };
 
@@ -16,7 +17,7 @@ type CameraState =
   | "captured"
   | "error";
 
-function CameraCapture({ onCapture, className }: CameraCaptureProps) {
+function CameraCapture({ onCapture, value, className }: CameraCaptureProps) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -24,7 +25,8 @@ function CameraCapture({ onCapture, className }: CameraCaptureProps) {
 
   const [state, setState] = useState<CameraState>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const capturedImage = value ?? null;
+  const displayState = capturedImage ? "captured" : state;
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -34,7 +36,6 @@ function CameraCapture({ onCapture, className }: CameraCaptureProps) {
   const startCamera = useCallback(async () => {
     setState("requesting");
     setErrorMsg(null);
-    setCapturedImage(null);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -67,28 +68,29 @@ function CameraCapture({ onCapture, className }: CameraCaptureProps) {
     if (!ctx) return;
     ctx.drawImage(video, 0, 0);
     const base64 = canvas.toDataURL("image/jpeg", 0.85);
-    setCapturedImage(base64);
     stopStream();
     setState("captured");
     onCapture(base64);
   }, [onCapture, stopStream]);
 
   const retake = useCallback(() => {
-    setCapturedImage(null);
+    onCapture("");
     void startCamera();
-  }, [startCamera]);
+  }, [onCapture, startCamera]);
 
   // Auto-start when mounted
   useEffect(() => {
+    if (value) return;
+
     // Defer so the effect body itself doesn't call setState synchronously
     const id = setTimeout(() => { void startCamera(); }, 0);
     return () => { clearTimeout(id); stopStream(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startCamera, stopStream, value]);
 
   return (
     <div className={cn("flex flex-col items-center gap-4", className)}>
       <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-input bg-muted aspect-4/3">
-        {state === "streaming" && (
+        {displayState === "streaming" && (
           <video
             ref={videoRef}
             autoPlay
@@ -98,7 +100,7 @@ function CameraCapture({ onCapture, className }: CameraCaptureProps) {
           />
         )}
 
-        {state === "captured" && capturedImage && (
+        {displayState === "captured" && capturedImage && (
           <img
             src={capturedImage}
             alt="Selfie capturada"
@@ -106,13 +108,13 @@ function CameraCapture({ onCapture, className }: CameraCaptureProps) {
           />
         )}
 
-        {(state === "idle" || state === "requesting") && (
+        {(displayState === "idle" || displayState === "requesting") && (
           <div className="flex h-full items-center justify-center">
             <Camera className="size-12 text-muted-foreground animate-pulse" />
           </div>
         )}
 
-        {state === "error" && (
+        {displayState === "error" && (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
             <AlertCircle className="size-10 text-destructive" />
             <p className="text-sm text-muted-foreground">{errorMsg}</p>
@@ -120,7 +122,7 @@ function CameraCapture({ onCapture, className }: CameraCaptureProps) {
         )}
 
         {/* Face oval guide */}
-        {state === "streaming" && (
+        {displayState === "streaming" && (
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -137,19 +139,19 @@ function CameraCapture({ onCapture, className }: CameraCaptureProps) {
       </p>
 
       <div className="flex gap-3">
-        {state === "streaming" && (
+        {displayState === "streaming" && (
           <Button type="button" onClick={capture} size="lg">
             <Camera className="mr-2 size-4" />
             {t("kyc.selfie.capture")}
           </Button>
         )}
-        {state === "captured" && (
+        {displayState === "captured" && (
           <Button type="button" variant="outline" onClick={retake}>
             <RefreshCw className="mr-2 size-4" />
             {t("kyc.selfie.retake")}
           </Button>
         )}
-        {state === "error" && (
+        {displayState === "error" && (
           <Button type="button" variant="outline" onClick={() => void startCamera()}>
             <RefreshCw className="mr-2 size-4" />
             Tentar novamente

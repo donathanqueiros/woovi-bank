@@ -110,7 +110,9 @@ describe("SubmitKyc mutation", () => {
     const result = await executeGraphQL(SUBMIT_KYC_MUTATION);
 
     expect(result.errors).toBeDefined();
-    expect(result.errors![0].message).toMatch(/autenticac/i);
+    const firstError = result.errors?.[0];
+    expect(firstError).toBeDefined();
+    expect(firstError?.message).toMatch(/autenticac/i);
     expect(KycModel.findOneAndUpdate).not.toHaveBeenCalled();
   });
 
@@ -135,7 +137,10 @@ describe("SubmitKyc mutation", () => {
       auth: { userId: "user-1", role: "USER" },
     });
 
-    const callArgs = KycModel.findOneAndUpdate.mock.calls[0][1] as {
+    const updateCall = KycModel.findOneAndUpdate.mock.calls[0];
+    expect(updateCall).toBeDefined();
+
+    const callArgs = updateCall![1] as {
       submittedAt: unknown;
     };
     expect(callArgs.submittedAt).toBeInstanceOf(Date);

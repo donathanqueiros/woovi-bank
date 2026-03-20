@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
+import { getKycActionCopy, KYC_ROUTE } from "@/pages/kyc/kyc-access";
 
 const LOGOUT_MUTATION = `
   mutation Logout {
@@ -28,6 +29,7 @@ const kycStatusVariant: Record<string, "warning" | "info" | "destructive" | "suc
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const kycAction = getKycActionCopy(user?.kycStatus);
 
   async function handleLogout() {
     try {
@@ -92,7 +94,7 @@ export default function ProfilePage() {
             <div>
               <h2 className="text-lg">Verificacao</h2>
               <p className="text-sm text-muted-foreground">
-                Estado atual de identidade e proximos passos.
+                {kycAction.description}
               </p>
             </div>
           </div>
@@ -107,11 +109,9 @@ export default function ProfilePage() {
                   <Badge variant={kycStatusVariant[user.kycStatus] ?? "secondary"}>
                     {kycStatusLabel[user.kycStatus] ?? user.kycStatus}
                   </Badge>
-                  {user.kycStatus !== "APPROVED" ? (
-                    <Button size="sm" variant="outline" onClick={() => navigate("/kyc")}>
-                      Verificar identidade
-                    </Button>
-                  ) : null}
+                  <Button size="sm" variant="outline" onClick={() => navigate(KYC_ROUTE)}>
+                    {kycAction.label}
+                  </Button>
                 </div>
               </div>
             ) : null}

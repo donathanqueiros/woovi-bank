@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Controller,
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, CheckCircle2, Image as ImageIcon } from "lucide-react";
 import type { KycFormData } from "./kyc-schemas";
 import { cn } from "@/lib/utils";
+import { getReviewMediaItems } from "./review-media";
 
 type ReviewStepProps = {
   control: Control<KycFormData>;
@@ -23,6 +25,51 @@ type ReviewSection = {
   step: number;
   rows: Array<{ label: string; value: string | undefined | null }>;
 };
+
+function ReviewMediaPreview({
+  title,
+  badgeLabel,
+  src,
+}: {
+  title: string;
+  badgeLabel: string;
+  src: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-input bg-card">
+      <img src={src} alt={title} className="aspect-4/3 w-full object-cover" />
+      <div className="flex items-center justify-between gap-3 border-t border-input px-3 py-2">
+        <span className="truncate text-sm font-medium text-foreground">
+          {title}
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-(--success)">
+          <CheckCircle2 className="size-3.5" />
+          {badgeLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ReviewFileMediaPreview({
+  title,
+  badgeLabel,
+  file,
+}: {
+  title: string;
+  badgeLabel: string;
+  file: File;
+}) {
+  const src = useMemo(() => URL.createObjectURL(file), [file]);
+
+  useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(src);
+    };
+  }, [src]);
+
+  return <ReviewMediaPreview title={title} badgeLabel={badgeLabel} src={src} />;
+}
 
 export function ReviewStep({
   control,
@@ -96,6 +143,17 @@ export function ReviewStep({
     },
   ];
 
+  const reviewMediaItems = useMemo(
+    () =>
+      getReviewMediaItems(values, {
+        proofDocument: t("kyc.address.proofDocument"),
+        frontImage: t("kyc.identity.frontImage"),
+        backImage: t("kyc.identity.backImage"),
+        selfie: t("kyc.review.selfie"),
+      }),
+    [t, values],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -107,18 +165,34 @@ export function ReviewStep({
         </p>
       </header>
 
-      {/* Selfie preview */}
-      {values.selfieBase64 && (
-        <div className="flex items-center gap-3 rounded-xl border border-input p-3">
-          <img
-            src={values.selfieBase64}
-            alt="Selfie"
-            className="size-16 rounded-lg object-cover"
-          />
-          <div className="flex items-center gap-1.5 text-sm text-(--success)">
-            <CheckCircle2 className="size-4" />
-            {t("kyc.review.selfieProvided")}
-          </div>
+      {reviewMediaItems.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {reviewMediaItems.map((item) => {
+            const badgeLabel =
+              item.kind === "base64"
+                ? t("kyc.review.selfieProvided")
+                : t("kyc.review.documentUploaded");
+
+            if (item.kind === "base64") {
+              return (
+                <ReviewMediaPreview
+                  key={item.key}
+                  title={item.title}
+                  badgeLabel={badgeLabel}
+                  src={item.src}
+                />
+              );
+            }
+
+            return (
+              <ReviewFileMediaPreview
+                key={item.key}
+                title={item.title}
+                badgeLabel={badgeLabel}
+                file={item.file}
+              />
+            );
+          })}
         </div>
       )}
 

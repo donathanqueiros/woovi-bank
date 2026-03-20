@@ -28,6 +28,7 @@ export function SelfieStep({ control, errors }: SelfieStepProps) {
         render={({ field }) => (
           <div className="flex flex-col items-center gap-2">
             <CameraCapture
+              value={field.value}
               onCapture={(base64) => field.onChange(base64)}
               className="w-full"
             />

@@ -14,15 +14,6 @@ function extractHolderNameFromEmail(email: string) {
   return email.split("@")[0] ?? "Usuario";
 }
 
-function getInitialRole(email: string) {
-  const configuredEmails = (process.env.INITIAL_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-  return configuredEmails.includes(email) ? "ADMIN" : "USER";
-}
-
 export const SignUpMutation = {
   type: new GraphQLNonNull(AuthPayloadType),
   args: {
@@ -64,7 +55,7 @@ export const SignUpMutation = {
         const createdUser = new User({
           email: normalizedEmail,
           passwordHash,
-          role: getInitialRole(normalizedEmail),
+          role: "USER",
           active: true,
         });
         if (sessionOptions) {
