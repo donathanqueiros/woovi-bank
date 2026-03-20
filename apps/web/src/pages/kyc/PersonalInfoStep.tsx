@@ -39,7 +39,7 @@ export function PersonalInfoStep({ control, errors }: PersonalInfoStepProps) {
         <FormField
           id="fullName"
           label={t("kyc.personalInfo.fullName")}
-          error={errors.fullName?.message}
+          error={t(errors.fullName?.message || "")}
           required
           className="sm:col-span-2"
         >
@@ -52,7 +52,9 @@ export function PersonalInfoStep({ control, errors }: PersonalInfoStepProps) {
                 id="fullName"
                 placeholder={t("kyc.personalInfo.fullNamePlaceholder")}
                 aria-invalid={Boolean(errors.fullName)}
-                aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                aria-describedby={
+                  errors.fullName ? "fullName-error" : undefined
+                }
                 autoComplete="name"
               />
             )}
@@ -62,7 +64,7 @@ export function PersonalInfoStep({ control, errors }: PersonalInfoStepProps) {
         <FormField
           id="email"
           label={t("kyc.personalInfo.email")}
-          error={errors.email?.message}
+          error={t(errors.email?.message || "")}
           required
         >
           <Controller
@@ -85,7 +87,7 @@ export function PersonalInfoStep({ control, errors }: PersonalInfoStepProps) {
         <FormField
           id="phone"
           label={t("kyc.personalInfo.phone")}
-          error={errors.phone?.message}
+          error={t(errors.phone?.message || "")}
           hint="+55 11 99999-9999"
           required
         >
@@ -109,7 +111,7 @@ export function PersonalInfoStep({ control, errors }: PersonalInfoStepProps) {
         <FormField
           id="dateOfBirth"
           label={t("kyc.personalInfo.dateOfBirth")}
-          error={errors.dateOfBirth?.message}
+          error={t(errors.dateOfBirth?.message || "")}
           required
         >
           <Controller
@@ -134,7 +136,7 @@ export function PersonalInfoStep({ control, errors }: PersonalInfoStepProps) {
         <FormField
           id="country"
           label={t("kyc.personalInfo.country")}
-          error={errors.country?.message}
+          error={t(errors.country?.message || "")}
           required
         >
           <Controller
@@ -147,7 +149,9 @@ export function PersonalInfoStep({ control, errors }: PersonalInfoStepProps) {
                 aria-invalid={Boolean(errors.country)}
                 aria-describedby={errors.country ? "country-error" : undefined}
               >
-                <option value="">{t("kyc.personalInfo.countryPlaceholder")}</option>
+                <option value="">
+                  {t("kyc.personalInfo.countryPlaceholder")}
+                </option>
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.label}

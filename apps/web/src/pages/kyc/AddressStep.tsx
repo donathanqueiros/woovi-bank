@@ -28,7 +28,7 @@ export function AddressStep({ control, errors }: AddressStepProps) {
         <FormField
           id="street"
           label={t("kyc.address.street")}
-          error={errors.street?.message}
+          error={t(errors.street?.message || "")}
           required
           className="sm:col-span-2"
         >
@@ -50,7 +50,7 @@ export function AddressStep({ control, errors }: AddressStepProps) {
         <FormField
           id="city"
           label={t("kyc.address.city")}
-          error={errors.city?.message}
+          error={t(errors.city?.message || "")}
           required
         >
           <Controller
@@ -71,7 +71,7 @@ export function AddressStep({ control, errors }: AddressStepProps) {
         <FormField
           id="state"
           label={t("kyc.address.state")}
-          error={errors.state?.message}
+          error={t(errors.state?.message || "")}
           required
         >
           <Controller
@@ -92,7 +92,7 @@ export function AddressStep({ control, errors }: AddressStepProps) {
         <FormField
           id="postalCode"
           label={t("kyc.address.postalCode")}
-          error={errors.postalCode?.message}
+          error={t(errors.postalCode?.message || "")}
           required
         >
           <Controller
@@ -122,7 +122,7 @@ export function AddressStep({ control, errors }: AddressStepProps) {
                 onChange={(_file, base64) => {
                   field.onChange(base64 ?? "");
                 }}
-                error={errors.proofDocumentBase64?.message}
+                error={t(errors.proofDocumentBase64?.message || "")}
               />
             )}
           />

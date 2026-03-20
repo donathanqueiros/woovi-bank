@@ -42,10 +42,7 @@ export const personalInfoSchema = z.object({
     .string()
     .min(1, "kyc.validation.required")
     .min(3, "Nome deve ter ao menos 3 caracteres"),
-  email: z
-    .string()
-    .min(1, "kyc.validation.required")
-    .email("kyc.validation.emailInvalid"),
+  email: z.email("kyc.validation.emailInvalid"),
   phone: z
     .string()
     .min(1, "kyc.validation.required")
@@ -53,7 +50,10 @@ export const personalInfoSchema = z.object({
   dateOfBirth: z
     .string()
     .min(1, "kyc.validation.required")
-    .refine((v) => !isNaN(new Date(v).getTime()), "kyc.validation.dateOfBirthInvalid")
+    .refine(
+      (v) => !isNaN(new Date(v).getTime()),
+      "kyc.validation.dateOfBirthInvalid",
+    )
     .refine(isAdult, "kyc.validation.dateOfBirthMinAge"),
   country: z.string().min(1, "kyc.validation.required"),
 });
@@ -81,7 +81,7 @@ export const identitySchema = z
   .object({
     idType: idTypeEnum.refine((v) => Boolean(v), "kyc.validation.required"),
     idNumber: z.string().min(1, "kyc.validation.required"),
-    frontImageBase64: z.string().min(1, "kyc.validation.required"),
+    frontImageBase64: z.string().optional(),
     backImageBase64: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -119,10 +119,12 @@ export type ReviewFormData = z.infer<typeof reviewSchema>;
 
 // ─── Combined ────────────────────────────────────────────────────────────────
 
-export const kycSchema = personalInfoSchema
-  .merge(addressSchema)
-  .merge(identitySchema)
-  .merge(selfieSchema)
-  .merge(reviewSchema);
+export const kycSchema = z.object({
+  ...personalInfoSchema.shape,
+  ...addressSchema.shape,
+  ...identitySchema.shape,
+  ...selfieSchema.shape,
+  ...reviewSchema.shape,
+});
 
 export type KycFormData = z.infer<typeof kycSchema>;

@@ -246,7 +246,6 @@ export default function KycPage() {
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-2xl">
-        {/* Header */}
         <div className="mb-8">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">
             Woovi Bank
@@ -259,10 +258,8 @@ export default function KycPage() {
           </p>
         </div>
 
-        {/* Step indicator */}
         <StepIndicator steps={stepsConfig} className="mb-8" />
 
-        {/* Step content with Framer Motion transitions */}
         <form onSubmit={onSubmit} noValidate>
           <div className="relative overflow-hidden rounded-2xl border border-input bg-card p-6 shadow-sm sm:p-8">
             <AnimatePresence initial={false} custom={direction} mode="wait">
@@ -280,7 +277,6 @@ export default function KycPage() {
             </AnimatePresence>
           </div>
 
-          {/* Navigation */}
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             <Button
               type="button"

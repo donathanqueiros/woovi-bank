@@ -1,5 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Controller, type Control, type FieldErrors, useWatch } from "react-hook-form";
+import {
+  Controller,
+  type Control,
+  type FieldErrors,
+  useWatch,
+} from "react-hook-form";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -38,7 +43,7 @@ export function IdentityStep({ control, errors }: IdentityStepProps) {
         <FormField
           id="idType"
           label={t("kyc.identity.idType")}
-          error={errors.idType?.message}
+          error={t(errors.idType?.message || "")}
           required
         >
           <Controller
@@ -64,7 +69,7 @@ export function IdentityStep({ control, errors }: IdentityStepProps) {
         <FormField
           id="idNumber"
           label={idNumberLabel}
-          error={errors.idNumber?.message}
+          error={t(errors.idNumber?.message || "")}
           hint={
             idType === "RG" || idType === "DRIVERS_LICENSE"
               ? "Ex: 123.456.789-09"
@@ -89,7 +94,6 @@ export function IdentityStep({ control, errors }: IdentityStepProps) {
         <div className="sm:col-span-2">
           <p className="mb-1.5 text-sm font-medium text-foreground">
             {t("kyc.identity.frontImage")}{" "}
-            <span className="text-destructive">*</span>
           </p>
           <Controller
             name="frontImageBase64"
@@ -98,7 +102,7 @@ export function IdentityStep({ control, errors }: IdentityStepProps) {
               <FileUpload
                 accept="image/jpeg,image/png"
                 onChange={(_file, base64) => field.onChange(base64 ?? "")}
-                error={errors.frontImageBase64?.message}
+                error={t(errors.frontImageBase64?.message || "")}
               />
             )}
           />
@@ -119,7 +123,7 @@ export function IdentityStep({ control, errors }: IdentityStepProps) {
                 <FileUpload
                   accept="image/jpeg,image/png"
                   onChange={(_file, base64) => field.onChange(base64 ?? "")}
-                  error={errors.backImageBase64?.message}
+                  error={t(errors.backImageBase64?.message || "")}
                 />
               )}
             />
