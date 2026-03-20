@@ -58,9 +58,19 @@ services:
     ports:
       - "4000:4000"
     environment:
+      - PORT=${PORT:-4000}
       - MONGO_URI=${MONGO_URI:?}
-      - NODE_ENV=${NODE_ENV:-development}
+      - SESSION_SECRET=${SESSION_SECRET:?}
+      - SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME:?}
+      - CORS_ORIGIN=${CORS_ORIGIN:?}
+      - WOOVI_APP_ID=${WOOVI_APP_ID:?}
+      - WOOVI_BASE_URL=${WOOVI_BASE_URL:?}
+      - ADM_EMAIL=${ADM_EMAIL:?}
+      - ADM_PASSWORD=${ADM_PASSWORD:?}
+
     restart: always
+    env_file:
+      - .env
 
   web:
     build:
@@ -75,107 +85,8 @@ services:
     ports:
       - "4173:80"
     restart: always
+    env_file:
+      - .env
 
 volumes:
   mongodb_data:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# services:
-#   mongo1:
-#     exclude_from_hc: true
-#     image: mongo:7
-#     command: ["mongod", "--replSet", "myReplicaSet", "--bind_ip_all", "--port", "27017"]
-#     ports:
-#       - "27017:27017"
-#     volumes:
-#       - mongo1_data:/data/db
-
-#   mongo2:
-#     exclude_from_hc: true
-#     image: mongo:7
-#     command: ["mongod", "--replSet", "myReplicaSet", "--bind_ip_all", "--port", "27017"]
-#     depends_on:
-#       mongo1:
-#         condition: service_started
-#     ports:
-#       - "27018:27017"
-#     volumes:
-#       - mongo2_data:/data/db
-
-#   mongodb-rs-init:
-#     image: mongo:7
-#     exclude_from_hc: true
-#     depends_on:
-#       mongo1:
-#         condition: service_started
-#       mongo2:
-#         condition: service_started
-#     restart: "no"
-#     entrypoint:
-#       - bash
-#       - -lc
-#       - |
-#         set -euo pipefail
-
-#         echo "Waiting for mongo1..."
-#         until mongosh --quiet mongodb://mongo1-q8w00csck48swgwg4wks0woc:27017/admin --eval "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)" >/dev/null 2>&1; do
-#           sleep 2
-#         done
-
-#         echo "Waiting for mongo2..."
-#         until mongosh --quiet mongodb://mongo2-q8w00csck48swgwg4wks0woc:27017/admin --eval "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)" >/dev/null 2>&1; do
-#           sleep 2
-#         done
-
-#         echo "Initializing MongoDB replica set..."
-#         mongosh --quiet mongodb://mongo1-q8w00csck48swgwg4wks0woc:27017/admin --eval '
-#           try {
-#             rs.status();
-#             print("Replica set already initialized");
-#           } catch (error) {
-#             rs.initiate({
-#               _id: "myReplicaSet",
-#               members: [
-#                 { _id: 0, host: "mongo1-q8w00csck48swgwg4wks0woc:27017" },
-#                 { _id: 1, host: "mongo2-q8w00csck48swgwg4wks0woc:27017" }
-#               ]
-#             });
-#             print("Replica set initialized");
-#           }
-#         '
-
-#         echo "Waiting for PRIMARY election..."
-#         until mongosh --quiet mongodb://mongo1-q8w00csck48swgwg4wks0woc:27017/admin --eval '
-#           const primary = rs.status().members.some((member) => member.stateStr === "PRIMARY");
-#           quit(primary ? 0 : 1);
-#         ' >/dev/null 2>&1; do
-#           sleep 2
-#         done
-
-#         echo "Replica set ready"
-
-
-
-# volumes:
-#   mongo1_data:
-#   mongo2_data:

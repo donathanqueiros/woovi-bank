@@ -12,7 +12,7 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/server/package.json apps/server/package.json
 
-RUN pnpm install --frozen-lockfile --filter ./apps/server...
+RUN pnpm install --frozen-lockfile --prod=false --filter ./apps/server...
 
 FROM deps AS build
 

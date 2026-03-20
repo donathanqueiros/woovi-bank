@@ -11,6 +11,9 @@ import type { GraphQLContext } from "../types/auth";
 
 const app = new Koa();
 
+// Production traffic reaches Koa through a reverse proxy/load balancer.
+app.proxy = true;
+
 function readRawRequestBody(req: Koa.Request["req"]) {
 	return new Promise<Buffer>((resolve, reject) => {
 		const chunks: Buffer[] = [];
@@ -175,7 +178,7 @@ app.use(
 				});
 
 				const authContext = await getAuthContextFromSessionToken(sessionToken);
-
+				
 				const requestContext = {
 					setSessionCookie: (token: string, expiresAt: Date) => {
 						cookies.set(config.SESSION_COOKIE_NAME, token, {
