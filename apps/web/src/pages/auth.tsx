@@ -96,6 +96,7 @@ export default function AuthPage() {
         email: payload.user.email,
         role: payload.user.role,
         accountId: payload.account.id,
+        kycStatus: payload.user.role === "ADMIN" ? "APPROVED" : "PENDING_SUBMISSION",
       });
 
       navigate("/accounts");

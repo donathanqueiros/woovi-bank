@@ -1,8 +1,15 @@
+export type KycStatus =
+  | "PENDING_SUBMISSION"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "REJECTED";
+
 export type AuthUser = {
   id: string;
   email: string;
   role: "USER" | "ADMIN";
   accountId: string;
+  kycStatus: KycStatus;
 };
 
 export const AUTH_STORAGE_KEY = "woovi-auth-user";

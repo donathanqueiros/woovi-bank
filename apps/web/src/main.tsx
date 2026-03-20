@@ -5,23 +5,13 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { Providers } from "./components/providers.tsx";
-import { useAuth } from "./lib/use-auth.ts";
 import AuthPage from "./pages/auth.tsx";
-import AccountsPage from "./pages/accounts.tsx";
-
-function ProtectedAccountsRoute() {
-  const { isAuthenticated, isBootstrapping } = useAuth();
-
-  if (isBootstrapping) {
-    return <div className="px-4 py-10 text-sm">Carregando sessao...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <AuthPage />;
-  }
-
-  return <AccountsPage />;
-}
+import AccountsListPage from "./pages/accounts-list.tsx";
+import TransactionsPage from "./pages/transactions.tsx";
+import TransferPage from "./pages/transfer.tsx";
+import ProfilePage from "./pages/profile.tsx";
+import AdminPage from "./pages/admin.tsx";
+import { ProtectedDashboardLayout, ProtectedKycRoute } from "./routes/protected-routes.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -31,7 +21,14 @@ createRoot(document.getElementById("root")!).render(
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/accounts" element={<ProtectedAccountsRoute />} />
+            <Route element={<ProtectedDashboardLayout />}>
+              <Route path="/accounts" element={<AccountsListPage />} />
+              <Route path="/transactions" element={<TransactionsPage />} />
+              <Route path="/transfer" element={<TransferPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Route>
+            <Route path="/kyc" element={<ProtectedKycRoute />} />
           </Routes>
         </BrowserRouter>
       </Suspense>

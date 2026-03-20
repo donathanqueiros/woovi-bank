@@ -1,0 +1,123 @@
+{
+  "kyc": {
+    "title": "Identity Verification",
+    "subtitle": "Complete the steps below to verify your account",
+    "steps": {
+      "personalInfo": "Personal Information",
+      "address": "Address",
+      "identity": "Identity",
+      "selfie": "Selfie",
+      "review": "Review"
+    },
+    "navigation": {
+      "next": "Next",
+      "back": "Back",
+      "submit": "Submit verification",
+      "submitting": "Submitting...",
+      "edit": "Edit"
+    },
+    "personalInfo": {
+      "title": "Personal Information",
+      "subtitle": "Fill in your personal details",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Enter your full name",
+      "email": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "phone": "Phone number",
+      "phonePlaceholder": "+1 555 000-0000",
+      "dateOfBirth": "Date of birth",
+      "country": "Country of residence",
+      "countryPlaceholder": "Select your country"
+    },
+    "address": {
+      "title": "Address Verification",
+      "subtitle": "Enter your current address",
+      "street": "Street address",
+      "streetPlaceholder": "Street, number, apartment",
+      "city": "City",
+      "cityPlaceholder": "Your city",
+      "state": "State / Province",
+      "statePlaceholder": "Select a state",
+      "postalCode": "Postal code",
+      "postalCodePlaceholder": "00000",
+      "proofDocument": "Proof of address",
+      "proofDocumentHint": "Utility bill or bank statement. PDF, JPG or PNG, max 5MB."
+    },
+    "identity": {
+      "title": "Identity Verification",
+      "subtitle": "Choose and upload your identity document",
+      "idType": "Document type",
+      "idTypePlaceholder": "Select type",
+      "passport": "Passport",
+      "driversLicense": "Driver's License",
+      "rg": "National ID (RG)",
+      "idNumber": "Document number / CPF",
+      "idNumberPlaceholder": "000.000.000-00",
+      "frontImage": "Front of document",
+      "frontImageHint": "Clear photo of the front of your document",
+      "backImage": "Back of document",
+      "backImageHint": "Clear photo of the back of your document"
+    },
+    "selfie": {
+      "title": "Live Selfie",
+      "subtitle": "Take a selfie to confirm your identity",
+      "instructions": "Position your face in the center, in a well-lit area, without glasses or hat.",
+      "capture": "Take photo",
+      "retake": "Retake",
+      "permissionDenied": "Camera permission denied. Enable camera access in your browser settings.",
+      "cameraNotAvailable": "Camera not available on this device."
+    },
+    "review": {
+      "title": "Review & Submit",
+      "subtitle": "Review your information before submitting",
+      "personalInfo": "Personal Information",
+      "address": "Address",
+      "identity": "Identity",
+      "selfie": "Selfie",
+      "selfieProvided": "Selfie captured",
+      "documentUploaded": "Document uploaded",
+      "terms": "I have read and accept the identity verification terms and conditions",
+      "termsRequired": "You must accept the terms to continue"
+    },
+    "validation": {
+      "required": "Required field",
+      "emailInvalid": "Invalid email address",
+      "phoneInvalid": "Invalid phone number. Use international format: +1 555 000-0000",
+      "dateOfBirthMinAge": "You must be at least 18 years old",
+      "dateOfBirthInvalid": "Invalid date",
+      "cpfInvalid": "Invalid CPF",
+      "fileTooLarge": "File too large. Maximum size: 5MB",
+      "fileTypeInvalid": "Invalid file type. Use PDF, JPG or PNG",
+      "selfieRequired": "Capture a selfie to continue"
+    },
+    "status": {
+      "pendingSubmission": "Verification pending",
+      "underReview": "Under review",
+      "approved": "Verified",
+      "rejected": "Rejected"
+    },
+    "banner": {
+      "title": "Account not verified",
+      "description": "Complete identity verification to get full access.",
+      "action": "Verify now"
+    },
+    "success": {
+      "title": "Documents submitted successfully!",
+      "description": "Your verification is under review. You will be notified shortly."
+    },
+    "error": {
+      "submit": "Error submitting verification. Please try again.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "draft": {
+      "restored": "Draft restored"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "close": "Close"
+  }
+}

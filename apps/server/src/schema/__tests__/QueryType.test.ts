@@ -35,6 +35,14 @@ jest.mock("../../modules/users/UserModel", () => {
   return { User };
 });
 
+jest.mock("../../modules/kyc/KycModel", () => {
+  const Kyc = {
+    findOne: jest.fn(),
+  };
+
+  return { Kyc };
+});
+
 import { createAccountDocument } from "../../__tests__/factories/createAccountDocument";
 import { createTransactionDocument } from "../../__tests__/factories/createTransactionDocument";
 import { executeGraphQL } from "../../__tests__/helpers/executeGraphQL";
@@ -42,6 +50,11 @@ import { Account } from "../../modules/accounts/AccountModel";
 import { LedgerEntry } from "../../modules/ledger/LedgerEntryModel";
 import { Transaction } from "../../modules/transactions/TransactionModel";
 import { User } from "../../modules/users/UserModel";
+import { Kyc } from "../../modules/kyc/KycModel";
+
+const KycModel = Kyc as unknown as {
+  findOne: jest.Mock;
+};
 
 const AccountModel = Account as unknown as jest.Mock & {
   find: jest.Mock;
@@ -273,6 +286,133 @@ describe("QueryType", () => {
     });
     expect(result.data).toEqual({
       transactionsCount: 14,
+    });
+  });
+
+  it("retorna myKyc para usuario autenticado", async () => {
+    KycModel.findOne.mockResolvedValue({
+      id: "kyc-1",
+      status: "UNDER_REVIEW",
+      submittedAt: new Date("2026-01-01T00:00:00.000Z"),
+      personalInfo: { fullName: "Ana Lima" },
+    });
+
+    const result = await executeGraphQL(
+      `
+        query {
+          myKyc {
+            id
+            status
+          }
+        }
+      `,
+      { auth: { userId: "user-1", role: "USER" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(KycModel.findOne).toHaveBeenCalledWith({ userId: "user-1" });
+    expect(result.data).toEqual({
+      myKyc: { id: "kyc-1", status: "UNDER_REVIEW" },
+    });
+  });
+
+  it("retorna null para myKyc quando nao autenticado", async () => {
+    const result = await executeGraphQL(`
+      query {
+        myKyc {
+          id
+          status
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({ myKyc: null });
+    expect(KycModel.findOne).not.toHaveBeenCalled();
+  });
+
+  it("me.kycStatus retorna APPROVED para admin", async () => {
+    UserModel.findById.mockResolvedValue({
+      id: "admin-1",
+      email: "admin@woovi.com",
+      role: "ADMIN",
+      active: true,
+    });
+    AccountModel.findOne.mockResolvedValue(null);
+
+    const result = await executeGraphQL(
+      `
+        query {
+          me {
+            id
+            kycStatus
+          }
+        }
+      `,
+      { auth: { userId: "admin-1", role: "ADMIN" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({
+      me: { id: "admin-1", kycStatus: "APPROVED" },
+    });
+    expect(KycModel.findOne).not.toHaveBeenCalled();
+  });
+
+  it("me.kycStatus retorna PENDING_SUBMISSION quando usuario nao tem KYC", async () => {
+    UserModel.findById.mockResolvedValue({
+      id: "user-2",
+      email: "novo@woovi.com",
+      role: "USER",
+      active: true,
+    });
+    AccountModel.findOne.mockResolvedValue(null);
+    KycModel.findOne.mockResolvedValue(null);
+
+    const result = await executeGraphQL(
+      `
+        query {
+          me {
+            id
+            kycStatus
+          }
+        }
+      `,
+      { auth: { userId: "user-2", role: "USER" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(KycModel.findOne).toHaveBeenCalledWith({ userId: "user-2" });
+    expect(result.data).toEqual({
+      me: { id: "user-2", kycStatus: "PENDING_SUBMISSION" },
+    });
+  });
+
+  it("me.kycStatus retorna status do KYC existente", async () => {
+    UserModel.findById.mockResolvedValue({
+      id: "user-3",
+      email: "aprovado@woovi.com",
+      role: "USER",
+      active: true,
+    });
+    AccountModel.findOne.mockResolvedValue(null);
+    KycModel.findOne.mockResolvedValue({ status: "APPROVED" });
+
+    const result = await executeGraphQL(
+      `
+        query {
+          me {
+            id
+            kycStatus
+          }
+        }
+      `,
+      { auth: { userId: "user-3", role: "USER" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({
+      me: { id: "user-3", kycStatus: "APPROVED" },
     });
   });
 });
