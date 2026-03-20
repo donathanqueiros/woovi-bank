@@ -34,17 +34,12 @@ export const DeleteUserMutation = {
       const sessionOptions = dbSession ? { session: dbSession } : undefined;
 
       await deleteSessionsByUserId(userId, sessionOptions);
-      await Account.updateOne(
-        { _id: account.id },
-        {
-          active: false,
-          userId: null,
-          holderName: DELETED_HOLDER_NAME,
-          deletedAt,
-          deletedByUserId,
-        },
-        sessionOptions,
-      );
+      account.active = false;
+      account.userId = null;
+      account.holderName = DELETED_HOLDER_NAME;
+      account.deletedAt = deletedAt;
+      account.deletedByUserId = deletedByUserId;
+      await account.save(sessionOptions);
       await User.deleteOne({ _id: userId }, sessionOptions);
     });
 

@@ -1,7 +1,6 @@
 jest.mock("../../AccountModel", () => {
   const Account = Object.assign(jest.fn(), {
     findOne: jest.fn(),
-    updateOne: jest.fn(),
     deleteOne: jest.fn(),
   });
 
@@ -57,7 +56,6 @@ import { IdempotencyRequest } from "../../../idempotency/IdempotencyRequestModel
 
 const AccountModel = Account as unknown as {
   findOne: jest.Mock;
-  updateOne: jest.Mock;
   deleteOne: jest.Mock;
 };
 
@@ -100,7 +98,6 @@ describe("DeleteUser mutation", () => {
     });
 
     AccountModel.findOne.mockResolvedValue(account);
-    AccountModel.updateOne.mockResolvedValue({ acknowledged: true, modifiedCount: 1 });
     AccountModel.deleteOne.mockResolvedValue({ acknowledged: true, deletedCount: 1 });
     UserModel.deleteOne.mockResolvedValue({ acknowledged: true, deletedCount: 1 });
     sessionService.deleteSessionsByUserId.mockResolvedValue(undefined);
@@ -145,15 +142,14 @@ describe("DeleteUser mutation", () => {
       "user-10",
       expect.any(Object),
     );
-    expect(AccountModel.updateOne).toHaveBeenCalledWith(
-      { _id: "account-10" },
+    expect(account.save).toHaveBeenCalledWith(expect.any(Object));
+    expect(account).toEqual(
       expect.objectContaining({
         active: false,
         userId: null,
         holderName: "Usuario removido",
         deletedByUserId: "admin-1",
       }),
-      expect.any(Object),
     );
     expect(UserModel.deleteOne).toHaveBeenCalledWith(
       { _id: "user-10" },
@@ -211,7 +207,6 @@ describe("DeleteUser mutation", () => {
     expect(result.errors?.[0]?.message).toContain(
       "Conta do usuario nao encontrada",
     );
-    expect(AccountModel.updateOne).not.toHaveBeenCalled();
     expect(UserModel.deleteOne).not.toHaveBeenCalled();
     expect(sessionService.deleteSessionsByUserId).not.toHaveBeenCalled();
   });

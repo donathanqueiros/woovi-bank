@@ -1,12 +1,12 @@
 import { model, Schema, Types } from "mongoose";
 
 export type IAccount = {
-  userId?: Types.ObjectId;
+  userId?: Types.ObjectId | string | null;
   holderName: string;
   balance: number;
   active: boolean;
   deletedAt?: Date;
-  deletedByUserId?: Types.ObjectId;
+  deletedByUserId?: Types.ObjectId | string;
   createdAt: Date;
 };
 
