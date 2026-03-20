@@ -835,11 +835,18 @@ export default function AccountsPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="text-sm">
                   Conta para credito
-                  <input
+                  <select
                     className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                     value={creditAccountId}
                     onChange={(event) => setCreditAccountId(event.target.value)}
-                  />
+                  >
+                    <option value="">Selecione uma conta</option>
+                    {accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.holderName} ({account.id.slice(0, 8)})
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="text-sm">
                   Valor do credito
@@ -1057,16 +1064,31 @@ export default function AccountsPage() {
                         </div>
                       </div>
 
-                      <div className="shrink-0 text-right">
-                        <div className="flex items-center justify-end gap-1 text-sm font-semibold">
-                          <DollarSign className="size-3.5 text-muted-foreground" />
-                          {formatBalance(account.balance)}
+                      {user?.role === "ADMIN" ? (
+                        <div className="shrink-0 text-right">
+                          <div className="flex items-center justify-end gap-1 text-sm font-semibold">
+                            <DollarSign className="size-3.5 text-muted-foreground" />
+                            {formatBalance(account.balance)}
+                          </div>
+                          <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                            <Calendar className="size-3" />
+                            {formatDate(account.createdAt)}
+                          </div>
                         </div>
-                        <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                          <Calendar className="size-3" />
-                          {formatDate(account.createdAt)}
+                      ) : (
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                            Visibilidade
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Saldo visivel apenas para administradores
+                          </p>
+                          <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                            <Calendar className="size-3" />
+                            {formatDate(account.createdAt)}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </li>
                 ))}

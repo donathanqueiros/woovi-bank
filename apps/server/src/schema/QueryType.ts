@@ -133,7 +133,7 @@ export const QueryType = new GraphQLObjectType({
       ) => {
         const { limit, skip } = getPagination(args.page, args.limit);
 
-        return await Account.find({}, null, {
+        return await Account.find({ active: true }, null, {
           sort: { createdAt: -1 },
           skip,
           limit,
@@ -144,7 +144,7 @@ export const QueryType = new GraphQLObjectType({
     accountsCount: {
       type: new GraphQLNonNull(GraphQLInt),
       resolve: async () => {
-        return await Account.countDocuments({});
+        return await Account.countDocuments({ active: true });
       },
     },
 

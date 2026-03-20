@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatBalance, formatDate } from "@/lib/formatters";
 import { graphqlRequest } from "@/lib/graphqlClient";
+import { useAuth } from "@/lib/use-auth";
 
 const PAGE_SIZE = 10;
 
@@ -28,6 +29,7 @@ type Account = {
 };
 
 export default function AccountsListPage() {
+  const { user } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -91,7 +93,7 @@ export default function AccountsListPage() {
               Panorama
             </p>
             <p className="text-2xl font-semibold tracking-[-0.04em]">{totalCount}</p>
-            <p className="text-sm text-muted-foreground">contas registradas no ambiente</p>
+            <p className="text-sm text-muted-foreground">contas ativas no ambiente</p>
           </div>
         </div>
       </section>
@@ -162,14 +164,25 @@ export default function AccountsListPage() {
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                      Saldo atual
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
-                      {formatBalance(account.balance)}
-                    </p>
-                  </div>
+                  {user?.role === "ADMIN" ? (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                        Saldo atual
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
+                        {formatBalance(account.balance)}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                        Visibilidade
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-muted-foreground">
+                        Saldo visivel apenas para administradores
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="size-4" />
                     {formatDate(account.createdAt)}

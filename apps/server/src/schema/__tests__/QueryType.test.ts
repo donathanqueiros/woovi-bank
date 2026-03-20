@@ -105,7 +105,7 @@ describe("QueryType", () => {
     `);
 
     expect(result.errors).toBeUndefined();
-    expect(AccountModel.countDocuments).toHaveBeenCalledWith({});
+    expect(AccountModel.countDocuments).toHaveBeenCalledWith({ active: true });
     expect(result.data).toEqual({
       accountsCount: 23,
     });
@@ -132,7 +132,7 @@ describe("QueryType", () => {
 
     expect(result.errors).toBeUndefined();
     expect(AccountModel.find).toHaveBeenCalledWith(
-      {},
+      { active: true },
       null,
       { limit: 2, skip: 2, sort: { createdAt: -1 } },
     );
@@ -166,6 +166,11 @@ describe("QueryType", () => {
 
     expect(result.errors).toBeUndefined();
     expect(AccountModel.find).toHaveBeenCalledTimes(1);
+    expect(AccountModel.find).toHaveBeenCalledWith(
+      { active: true },
+      null,
+      { limit: 10, skip: 0, sort: { createdAt: -1 } },
+    );
     expect(LedgerEntryModel.aggregate).toHaveBeenCalledTimes(2);
     expect(result.data).toEqual({
       accounts: [
