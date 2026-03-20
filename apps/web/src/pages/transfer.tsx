@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatBalance, newIdempotencyKey } from "@/lib/formatters";
 import { graphqlRequest } from "@/lib/graphqlClient";
+import { getTransferValidationMessage } from "@/lib/transfer-validation";
 import { useAuth } from "@/lib/use-auth";
+import { cn } from "@/lib/utils";
 
 const ACCOUNTS_QUERY = `
   query TransferPageAccounts($page: Int!, $limit: Int!) {
@@ -37,7 +39,7 @@ const TRANSFER_MUTATION = `
 type Account = {
   id: string;
   holderName: string;
-  balance: number;
+  balance: number | null;
 };
 
 export default function TransferPage() {
@@ -48,6 +50,7 @@ export default function TransferPage() {
   const [transferDescription, setTransferDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackTone, setFeedbackTone] = useState<"error" | "success">("success");
 
   const loadAccounts = useCallback(async () => {
     try {
@@ -74,11 +77,26 @@ export default function TransferPage() {
     () => accounts.filter((acc) => acc.id !== user?.accountId),
     [accounts, user?.accountId],
   );
+  const hasKnownRecipients = otherAccounts.length > 0;
 
   async function handleTransfer() {
     if (!user) return;
-    if (!transferTo) {
-      setFeedback("Escolha uma conta de destino.");
+    const destinationAccountId = transferTo.trim();
+
+    if (!destinationAccountId) {
+      setFeedbackTone("error");
+      setFeedback("Informe a conta de destino.");
+      return;
+    }
+
+    const validationMessage = getTransferValidationMessage({
+      amount: transferAmount,
+      balance: myAccount?.balance,
+    });
+
+    if (validationMessage) {
+      setFeedbackTone("error");
+      setFeedback(validationMessage);
       return;
     }
 
@@ -88,16 +106,19 @@ export default function TransferPage() {
     try {
       await graphqlRequest(TRANSFER_MUTATION, {
         fromAccountId: user.accountId,
-        toAccountId: transferTo,
+        toAccountId: destinationAccountId,
         amount: Number(transferAmount),
         idempotencyKey: newIdempotencyKey(),
         description: transferDescription || undefined,
       });
 
+      setFeedbackTone("success");
       setFeedback("Transferencia enviada com sucesso.");
+      setTransferTo("");
       setTransferDescription("");
       await loadAccounts();
     } catch (err) {
+      setFeedbackTone("error");
       setFeedback(err instanceof Error ? err.message : "Falha na transferencia");
     } finally {
       setLoading(false);
@@ -133,21 +154,34 @@ export default function TransferPage() {
           <div className="space-y-2">
             <h2>Novo envio</h2>
             <p className="text-sm leading-6 text-muted-foreground">
-              Preencha os dados abaixo para mover valor entre contas cadastradas.
+              Preencha os dados abaixo para mover valor entre contas sem expor listagens amplas.
             </p>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <label className="space-y-2 text-sm font-medium">
               <span>Conta de destino</span>
-              <Select value={transferTo} onChange={(e) => setTransferTo(e.target.value)}>
-                <option value="">Selecione uma conta</option>
-                {otherAccounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.holderName} ({acc.id.slice(0, 8)})
-                  </option>
-                ))}
-              </Select>
+              {hasKnownRecipients ? (
+                <Select value={transferTo} onChange={(e) => setTransferTo(e.target.value)}>
+                  <option value="">Selecione uma conta</option>
+                  {otherAccounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.holderName} ({acc.id.slice(0, 8)})
+                    </option>
+                  ))}
+                </Select>
+              ) : (
+                <Input
+                  value={transferTo}
+                  onChange={(e) => setTransferTo(e.target.value)}
+                  placeholder="Cole o ID da conta de destino"
+                />
+              )}
+              <p className="text-xs leading-5 text-muted-foreground">
+                {hasKnownRecipients
+                  ? "Use a lista segura de destinatarios disponiveis para sua sessao."
+                  : "Para preservar privacidade, informe o ID completo da conta de destino."}
+              </p>
             </label>
 
             <label className="space-y-2 text-sm font-medium">
@@ -172,7 +206,14 @@ export default function TransferPage() {
           </div>
 
           {feedback ? (
-            <p className="mt-4 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-foreground">
+            <p
+              className={cn(
+                "mt-4 rounded-2xl border px-4 py-3 text-sm",
+                feedbackTone === "error"
+                  ? "border-destructive/40 bg-destructive/10 text-destructive"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700",
+              )}
+            >
               {feedback}
             </p>
           ) : null}
@@ -202,7 +243,7 @@ export default function TransferPage() {
             <div className="rounded-[20px] border border-border/70 bg-background/70 p-4">
               <p className="text-sm font-medium">Confira o destino</p>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Identifique a contraparte pelo nome e pelos primeiros caracteres do ID.
+                Confirme o ID da conta antes de enviar. O destinatario nao fica exposto em listas publicas.
               </p>
             </div>
             <div className="rounded-[20px] border border-border/70 bg-background/70 p-4">

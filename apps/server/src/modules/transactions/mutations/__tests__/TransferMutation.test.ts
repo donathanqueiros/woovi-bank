@@ -157,7 +157,6 @@ describe("Transfer mutation", () => {
         ) {
           id
           amount
-          idempotencyKey
           description
         }
       }
@@ -207,7 +206,6 @@ describe("Transfer mutation", () => {
       Transfer: {
         id: "transaction-1",
         amount: 120,
-        idempotencyKey: "idem-1",
         description: "Pagamento",
       },
     });

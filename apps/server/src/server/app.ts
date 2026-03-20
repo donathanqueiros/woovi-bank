@@ -182,7 +182,7 @@ app.use(
 							httpOnly: true,
 							signed: true,
 							sameSite: "lax",
-							secure: false,
+							secure: process.env.NODE_ENV === "production",
 							expires: expiresAt,
 							overwrite: true,
 						});
@@ -192,7 +192,7 @@ app.use(
 							httpOnly: true,
 							signed: true,
 							sameSite: "lax",
-							secure: false,
+							secure: process.env.NODE_ENV === "production",
 							expires: new Date(0),
 							overwrite: true,
 						});

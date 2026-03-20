@@ -30,6 +30,7 @@ import {
   DashboardSidebar,
   type SidebarItem,
 } from "@/components/dashboard-sidebar";
+import { getTransferValidationMessage } from "@/lib/transfer-validation";
 import { cn } from "@/lib/utils";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
@@ -265,6 +266,7 @@ export default function AccountsPage() {
   const [transferDescription, setTransferDescription] = useState("");
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferFeedback, setTransferFeedback] = useState<string | null>(null);
+  const [transferFeedbackTone, setTransferFeedbackTone] = useState<"error" | "success">("success");
   const [depositAmount, setDepositAmount] = useState("100");
   const [depositLoading, setDepositLoading] = useState(false);
   const [depositFeedback, setDepositFeedback] = useState<string | null>(null);
@@ -293,6 +295,11 @@ export default function AccountsPage() {
     () => users.find((item) => item.id === deleteUserId) ?? null,
     [deleteUserId, users],
   );
+  const transferableAccounts = useMemo(
+    () => accounts.filter((account) => account.id !== user?.accountId),
+    [accounts, user?.accountId],
+  );
+  const hasKnownTransferRecipients = transferableAccounts.length > 0;
 
   const sidebarItems = useMemo<SidebarItem[]>(() => {
     const items: SidebarItem[] = [
@@ -490,8 +497,22 @@ export default function AccountsPage() {
       return;
     }
 
-    if (!transferTo) {
-      setTransferFeedback("Escolha uma conta de destino.");
+    const destinationAccountId = transferTo.trim();
+
+    if (!destinationAccountId) {
+      setTransferFeedbackTone("error");
+      setTransferFeedback("Informe a conta de destino.");
+      return;
+    }
+
+    const validationMessage = getTransferValidationMessage({
+      amount: transferAmount,
+      balance: myAccount?.balance,
+    });
+
+    if (validationMessage) {
+      setTransferFeedbackTone("error");
+      setTransferFeedback(validationMessage);
       return;
     }
 
@@ -501,16 +522,19 @@ export default function AccountsPage() {
     try {
       await graphqlRequest(TRANSFER_MUTATION, {
         fromAccountId: user.accountId,
-        toAccountId: transferTo,
+        toAccountId: destinationAccountId,
         amount: Number(transferAmount),
         idempotencyKey: newIdempotencyKey(),
         description: transferDescription || undefined,
       });
 
+      setTransferFeedbackTone("success");
       setTransferFeedback("Transferencia enviada com sucesso.");
+      setTransferTo("");
       setTransferDescription("");
       await loadDashboardData();
     } catch (err: unknown) {
+      setTransferFeedbackTone("error");
       setTransferFeedback(err instanceof Error ? err.message : "Falha na transferencia");
     } finally {
       setTransferLoading(false);
@@ -648,7 +672,9 @@ export default function AccountsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold">Transferir dinheiro</h2>
-                <p className="text-xs text-slate-600">Botao de acao para enviar entre contas.</p>
+                <p className="text-xs text-slate-600">
+                  Envio entre contas com destino informado sem expor listagens amplas.
+                </p>
               </div>
               <div className="text-right text-sm">
                 <p className="text-slate-500">Saldo da sua conta</p>
@@ -659,20 +685,32 @@ export default function AccountsPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <label className="text-sm">
                 Destino
-                <select
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                  value={transferTo}
-                  onChange={(event) => setTransferTo(event.target.value)}
-                >
-                  <option value="">Selecione</option>
-                  {accounts
-                    .filter((account) => account.id !== user?.accountId)
-                    .map((account) => (
+                {hasKnownTransferRecipients ? (
+                  <select
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                    value={transferTo}
+                    onChange={(event) => setTransferTo(event.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    {transferableAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.holderName} ({account.id.slice(0, 8)})
                       </option>
                     ))}
-                </select>
+                  </select>
+                ) : (
+                  <input
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                    value={transferTo}
+                    onChange={(event) => setTransferTo(event.target.value)}
+                    placeholder="Cole o ID da conta de destino"
+                  />
+                )}
+                <p className="mt-1 text-xs text-slate-500">
+                  {hasKnownTransferRecipients
+                    ? "Use os destinatarios permitidos para sua sessao."
+                    : "Para preservar privacidade, informe manualmente o ID da conta de destino."}
+                </p>
               </label>
 
               <label className="text-sm">
@@ -702,7 +740,16 @@ export default function AccountsPage() {
                 <SendHorizontal className="mr-2 h-4 w-4" />
                 {transferLoading ? "Transferindo..." : "Transferir agora"}
               </Button>
-              {transferFeedback ? <p className="text-sm text-slate-700">{transferFeedback}</p> : null}
+              {transferFeedback ? (
+                <p
+                  className={cn(
+                    "text-sm",
+                    transferFeedbackTone === "error" ? "text-destructive" : "text-emerald-700",
+                  )}
+                >
+                  {transferFeedback}
+                </p>
+              ) : null}
             </div>
           </section>
 
@@ -1068,7 +1115,7 @@ export default function AccountsPage() {
                         <div className="shrink-0 text-right">
                           <div className="flex items-center justify-end gap-1 text-sm font-semibold">
                             <DollarSign className="size-3.5 text-muted-foreground" />
-                            {formatBalance(account.balance)}
+                            {formatBalance(account.balance ?? 0)}
                           </div>
                           <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
                             <Calendar className="size-3" />

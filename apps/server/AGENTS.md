@@ -18,9 +18,13 @@ Backend em Koa com GraphQL programático e persistência em MongoDB via Mongoose
 ```
 src/
 ├── modules/
+    ├──auth/
+    │   ├── AuthQuery.ts        # Auth queries (me) — componível
+    │   └── authorization.ts  # Helpers de autorização (requireAuth, requireAdmin, etc)
 │   └── {domain}/                    # ex: accounts, transactions, notifications
 │       ├── {Domain}Model.ts         # Mongoose schema + model + tipo IAccount
 │       ├── {Domain}Type.ts          # GraphQLObjectType
+│       ├── {Domain}Query.ts         # Índice: exporta todas queries do domínio
 │       ├── mutations/
 │       │   ├── {domain}Mutations.ts # Índice: exporta todas mutations do domínio
 │       │   └── {Action}{Domain}Mutation.ts  # Uma mutation por arquivo
@@ -29,9 +33,12 @@ src/
 │           └── {Event}Subscription.ts       # Uma subscription por arquivo
 ├── schema/
 │   ├── schema.ts           # GraphQLSchema principal
-│   ├── QueryType.ts        # Root Query
+│   ├── QueryType.ts        # Root Query — spread de {domain}Queries
 │   ├── MutationType.ts     # Root Mutation — spread de {domain}Mutations
 │   └── SubscriptionType.ts # Root Subscription — spread de {domain}Subscriptions
+├── server/
+│   ├── app.ts              # Koa setup + GraphQL context
+│   └── authorization.ts    # Centralized auth helpers (requireAuth, requireAdmin, etc)
 └── database.ts
 ```
 
@@ -41,11 +48,101 @@ src/
 |------|--------|
 | Arquivos de módulo | PascalCase (`AccountType.ts`, `CreateAccountMutation.ts`) |
 | Índice de mutations | camelCase plural (`accountMutations`) dentro de `{domain}Mutations.ts` |
+| Índice de queries | camelCase plural (`accountsQueries`) dentro de `queries.ts` |
 | Nomes de mutation no schema | PascalCase (`CreateAccount`, `Transfer`) |
 | Nomes de query no schema | camelCase (`account`, `accounts`) |
 | Campos obrigatórios | Sempre `new GraphQLNonNull(...)` |
 | Listas não-nulas | `new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ItemType)))` |
 | Resolvers com DB | Sempre `async/await` com Mongoose |
+
+---
+
+## Autorização e Segurança
+
+Toda autorização é centralizada em `src/server/authorization.ts` com helpers reutilizáveis:
+
+### Helpers Disponíveis
+
+| Helper | Uso | Exceção |
+|--------|-----|---------|
+| `requireAuth(context)` | Valida autenticação; lança erro se não autenticado | `AuthorizationError` |
+| `requireAdmin(context)` | Valida role admin; lança erro se não admin | `AuthorizationError` |
+| `getAuthenticatedAccount(context)` | Carrega conta do usuário autenticado | Lança se conta não encontrada |
+| `assertOwnerOrAdmin(userId, context)` | Valida ownership (userId) ou admin | Lança se não owner e não admin |
+| `assertAccountOwnerOrAdmin(accountId, context)` | Valida ownership (accountId) ou admin | Lança se não owner e não admin |
+
+### Padrões de Autorização
+
+```typescript
+// Pattern 1: Public query (sem auth)
+export const accountsQueries = {
+  account: {
+    resolve: async (_source, { id }) => {
+      return await Account.findById(id);
+    },
+  },
+};
+
+// Pattern 2: Optional auth (retorna null se não autenticado)
+export const authQueries = {
+  me: {
+    resolve: async (_source, _args, context) => {
+      if (!context.auth?.userId) return null;
+      return await User.findById(context.auth.userId);
+    },
+  },
+};
+
+// Pattern 3: Admin only
+export const usersQueries = {
+  users: {
+    resolve: async (_source, _args, context) => {
+      requireAdmin(context);
+      return await User.find({});
+    },
+  },
+};
+
+// Pattern 4: Owner or admin (single resource)
+export const transactionsQueries = {
+  transaction: {
+    resolve: async (_source, { id }, context) => {
+      requireAuth(context);
+      const tx = await Transaction.findById(id);
+      if (!transactionBelongsToAccount(tx, userAccountId)) {
+        throw new AuthorizationError("Sem permissao");
+      }
+      return tx;
+    },
+  },
+};
+
+// Pattern 5: Owner or admin (account filter)
+export const transactionsQueries = {
+  transactions: {
+    resolve: async (_source, args, context) => {
+      const accountId = await assertAccountOwnerOrAdmin(
+        args.accountId,
+        context,
+      );
+      return await Transaction.find(query);
+    },
+  },
+};
+```
+
+### Regra de Ouro
+
+**Sempre teste autorização ANTES de queries/mutations ao banco:**
+```typescript
+// ❌ ERRADO: DTD before auth check
+const data = await ExpensiveQuery.find();
+if (user.role !== "ADMIN") throw Error();
+
+// ✅ CORRETO: Auth check FIRST
+requireAdmin(context);
+const data = await ExpensiveQuery.find();
+```
 
 ---
 
@@ -183,21 +280,71 @@ export const SubscriptionType = new GraphQLObjectType({
 
 O padrão é idêntico ao de mutations: um arquivo por subscription → índice do domínio → spread no root.
 
-### 6. Registrar queries no Root — `src/schema/QueryType.ts`
+### 6. Criar índice de queries — `src/modules/{domain}/queries.ts`
+
+Assim como mutations, queries de cada módulo são exportadas em um arquivo `queries.ts`:
 
 ```typescript
-import { {Domain}Type } from "../modules/{domain}/{Domain}Type";
-import { {Domain} } from "../modules/{domain}/{Domain}Model";
+// src/modules/{domain}/queries.ts
+import { GraphQLNonNull, GraphQLID } from "graphql";
+import { {Domain}Type } from "./{Domain}Type";
+import { {Domain} } from "./{Domain}Model";
+import type { GraphQLContext } from "../../types/auth";
 
-{domain}: {
-  type: {Domain}Type,
-  args: {
-    id: { type: new GraphQLNonNull(GraphQLID) },
+/**
+ * {Domain} module — {Auth pattern} queries
+ * Pattern: {queryName}
+ */
+export const {domain}Queries = {
+  {queryName}: {
+    type: {Domain}Type,
+    args: {
+      id: { type: new GraphQLNonNull(GraphQLID) },
+    },
+    resolve: async (_source: unknown, { id }: { id: string }) => {
+      return await {Domain}.findById(id);
+    },
   },
-  resolve: async (_, { id }: { id: string }) => {
-    return await {Domain}.findById(id);
+};
+```
+
+**Auth Patterns:**
+- `Public query` — Sem `requireAuth()`, acessível sem autenticação
+- `Optional auth` — Verifica `context.auth?.userId` com return null
+- `Owner only` — Usa `getAuthenticatedAccount()` para validação
+- `Owner or admin` — Usa `assertAccountOwnerOrAdmin()` ou `assertOwnerOrAdmin()`
+- `Admin only` — Usa `requireAdmin()` para validação
+
+### 7. Registrar queries no Root — `src/schema/QueryType.ts`
+
+Compose queries de múltiplos módulos usando spread operator:
+
+```typescript
+import { GraphQLObjectType } from "graphql";
+import { authQueries } from "./authQueries";
+import { accountsQueries } from "../modules/accounts/queries";
+import { transactionsQueries } from "../modules/transactions/queries";
+import { {domain}Queries } from "../modules/{domain}/queries";
+
+/**
+ * Root Query Type — Composes queries from all modules
+ */
+export const QueryType = new GraphQLObjectType({
+  name: "Query",
+  fields: {
+    ...authQueries,           // me (optional auth)
+    ...accountsQueries,       // account, accounts, accountsCount (public)
+    ...usersQueries,          // users (admin only)
+    ...transactionsQueries,   // transaction, transactions, transactionsCount (owner/admin)
+    ...{domain}Queries,       // Seu novo domínio
   },
-},
+});
+```
+
+**Convenção:** Ordem de spread segue padrão de segurança:
+1. `authQueries` — Optional/Public
+2. Queries públicas (ex: `accountsQueries`)
+3. Queries restritas por módulo (transactions, deposits, kyc, etc)
 
 {domain}s: {
   type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull({Domain}Type))),

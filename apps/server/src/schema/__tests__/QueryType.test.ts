@@ -116,9 +116,6 @@ describe("QueryType", () => {
       createAccountDocument({ id: "account-11", holderName: "Lucas" }),
       createAccountDocument({ id: "account-12", holderName: "Paula" }),
     ]);
-    LedgerEntryModel.aggregate
-      .mockResolvedValueOnce([{ balance: 85 }])
-      .mockResolvedValueOnce([{ balance: 150 }]);
 
     const result = await executeGraphQL(`
       query {
@@ -136,11 +133,10 @@ describe("QueryType", () => {
       null,
       { limit: 2, skip: 2, sort: { createdAt: -1 } },
     );
-    expect(LedgerEntryModel.aggregate).toHaveBeenCalledTimes(2);
     expect(result.data).toEqual({
       accounts: [
-        { id: "account-11", holderName: "Lucas", balance: 85 },
-        { id: "account-12", holderName: "Paula", balance: 150 },
+        { id: "account-11", holderName: "Lucas", balance: null },
+        { id: "account-12", holderName: "Paula", balance: null },
       ],
     });
   });
@@ -150,10 +146,6 @@ describe("QueryType", () => {
       createAccountDocument({ id: "account-1", holderName: "Joao" }),
       createAccountDocument({ id: "account-2", holderName: "Maria" }),
     ]);
-    LedgerEntryModel.aggregate
-      .mockResolvedValueOnce([{ balance: 130 }])
-      .mockResolvedValueOnce([{ balance: 40 }]);
-
     const result = await executeGraphQL(`
       query {
         accounts {
@@ -171,6 +163,42 @@ describe("QueryType", () => {
       null,
       { limit: 10, skip: 0, sort: { createdAt: -1 } },
     );
+    expect(result.data).toEqual({
+      accounts: [
+        { id: "account-1", holderName: "Joao", balance: null },
+        { id: "account-2", holderName: "Maria", balance: null },
+      ],
+    });
+  });
+
+  it("returns account balances to admin", async () => {
+    AccountModel.find.mockResolvedValue([
+      createAccountDocument({ id: "account-1", holderName: "Joao" }),
+      createAccountDocument({ id: "account-2", holderName: "Maria" }),
+    ]);
+    LedgerEntryModel.aggregate
+      .mockResolvedValueOnce([{ balance: 130 }])
+      .mockResolvedValueOnce([{ balance: 40 }]);
+
+    const result = await executeGraphQL(
+      `
+        query {
+          accounts {
+            id
+            holderName
+            balance
+          }
+        }
+      `,
+      {
+        auth: {
+          userId: "admin-1",
+          role: "ADMIN",
+        },
+      },
+    );
+
+    expect(result.errors).toBeUndefined();
     expect(LedgerEntryModel.aggregate).toHaveBeenCalledTimes(2);
     expect(result.data).toEqual({
       accounts: [
@@ -305,7 +333,35 @@ describe("QueryType", () => {
     expect(UserModel.find).not.toHaveBeenCalled();
   });
 
-  it("fetches a transaction by id", async () => {
+  it("returns null balance for public account queries without privileged access", async () => {
+    AccountModel.findById.mockResolvedValue(
+      createAccountDocument({
+        id: "account-2",
+        userId: "user-2",
+      }),
+    );
+
+    const result = await executeGraphQL(`
+      query {
+        account(id: "account-2") {
+          id
+          holderName
+          balance
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({
+      account: {
+        id: "account-2",
+        holderName: "Conta Teste",
+        balance: null,
+      },
+    });
+  });
+
+  it("fetches a transaction by id for admin", async () => {
     TransactionModel.findById.mockResolvedValue(
       createTransactionDocument({
         id: "transaction-9",
@@ -314,15 +370,23 @@ describe("QueryType", () => {
       }),
     );
 
-    const result = await executeGraphQL(`
-      query {
-        transaction(id: "transaction-9") {
-          id
-          amount
-          description
+    const result = await executeGraphQL(
+      `
+        query {
+          transaction(id: "transaction-9") {
+            id
+            amount
+            description
+          }
         }
-      }
-    `);
+      `,
+      {
+        auth: {
+          userId: "admin-1",
+          role: "ADMIN",
+        },
+      },
+    );
 
     expect(result.errors).toBeUndefined();
     expect(TransactionModel.findById).toHaveBeenCalledWith("transaction-9");
@@ -335,7 +399,42 @@ describe("QueryType", () => {
     });
   });
 
-  it("lists paginated transactions with page and limit", async () => {
+  it("blocks transaction query when user is not part of it", async () => {
+    TransactionModel.findById.mockResolvedValue(
+      createTransactionDocument({
+        id: "transaction-9",
+        fromAccountId: "account-2",
+        toAccountId: "account-3",
+      }),
+    );
+    AccountModel.findOne.mockResolvedValue(
+      createAccountDocument({
+        id: "account-1",
+        userId: "user-1",
+      }),
+    );
+
+    const result = await executeGraphQL(
+      `
+        query {
+          transaction(id: "transaction-9") {
+            id
+          }
+        }
+      `,
+      {
+        auth: {
+          userId: "user-1",
+          role: "USER",
+        },
+      },
+    );
+
+    expect(result.errors).toBeDefined();
+    expect(result.errors?.[0]?.message).toContain("Sem permissao para acessar esta transacao");
+  });
+
+  it("lists paginated transactions with page and limit for admin", async () => {
     TransactionModel.find.mockResolvedValue([
       createTransactionDocument({
         id: "transaction-3",
@@ -344,15 +443,23 @@ describe("QueryType", () => {
       }),
     ]);
 
-    const result = await executeGraphQL(`
-      query {
-        transactions(page: 3, limit: 1) {
-          id
-          amount
-          description
+    const result = await executeGraphQL(
+      `
+        query {
+          transactions(page: 3, limit: 1) {
+            id
+            amount
+            description
+          }
         }
-      }
-    `);
+      `,
+      {
+        auth: {
+          userId: "admin-1",
+          role: "ADMIN",
+        },
+      },
+    );
 
     expect(result.errors).toBeUndefined();
     expect(TransactionModel.find).toHaveBeenCalledWith(
@@ -371,14 +478,36 @@ describe("QueryType", () => {
     });
   });
 
-  it("returns transactions count by account for pagination", async () => {
-    TransactionModel.countDocuments.mockResolvedValue(14);
-
+  it("blocks transactions query when user is not authenticated", async () => {
     const result = await executeGraphQL(`
       query {
-        transactionsCount(accountId: "account-1")
+        transactions {
+          id
+        }
       }
     `);
+
+    expect(result.errors).toBeDefined();
+    expect(result.errors?.[0]?.message).toContain("Usuario nao autenticado");
+    expect(TransactionModel.find).not.toHaveBeenCalled();
+  });
+
+  it("returns transactions count by account for pagination to admin", async () => {
+    TransactionModel.countDocuments.mockResolvedValue(14);
+
+    const result = await executeGraphQL(
+      `
+        query {
+          transactionsCount(accountId: "account-1")
+        }
+      `,
+      {
+        auth: {
+          userId: "admin-1",
+          role: "ADMIN",
+        },
+      },
+    );
 
     expect(result.errors).toBeUndefined();
     expect(TransactionModel.countDocuments).toHaveBeenCalledWith({
@@ -389,6 +518,144 @@ describe("QueryType", () => {
     });
     expect(result.data).toEqual({
       transactionsCount: 14,
+    });
+  });
+
+  it("scopes transactionsCount to the authenticated user's account", async () => {
+    AccountModel.findOne.mockResolvedValue(
+      createAccountDocument({
+        id: "account-1",
+        userId: "user-1",
+      }),
+    );
+    TransactionModel.countDocuments.mockResolvedValue(4);
+
+    const result = await executeGraphQL(
+      `
+        query {
+          transactionsCount
+        }
+      `,
+      {
+        auth: {
+          userId: "user-1",
+          role: "USER",
+        },
+      },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(AccountModel.findOne).toHaveBeenCalledWith({ userId: "user-1" });
+    expect(TransactionModel.countDocuments).toHaveBeenCalledWith({
+      $or: [
+        { fromAccountId: "account-1" },
+        { toAccountId: "account-1" },
+      ],
+    });
+    expect(result.data).toEqual({
+      transactionsCount: 4,
+    });
+  });
+
+  it("blocks transactions query when user requests another account", async () => {
+    AccountModel.findOne.mockResolvedValue(
+      createAccountDocument({
+        id: "account-1",
+        userId: "user-1",
+      }),
+    );
+
+    const result = await executeGraphQL(
+      `
+        query {
+          transactions(accountId: "account-2") {
+            id
+          }
+        }
+      `,
+      {
+        auth: {
+          userId: "user-1",
+          role: "USER",
+        },
+      },
+    );
+
+    expect(result.errors).toBeDefined();
+    expect(result.errors?.[0]?.message).toContain("Sem permissao para acessar transacoes desta conta");
+    expect(TransactionModel.find).not.toHaveBeenCalled();
+  });
+
+  it("does not expose idempotencyKey in TransactionType", async () => {
+    const result = await executeGraphQL(
+      `
+        query {
+          transaction(id: "transaction-1") {
+            id
+            idempotencyKey
+          }
+        }
+      `,
+      {
+        auth: {
+          userId: "admin-1",
+          role: "ADMIN",
+        },
+      },
+    );
+
+    expect(result.errors).toBeDefined();
+    expect(result.errors?.[0]?.message).toContain("Cannot query field \"idempotencyKey\"");
+  });
+
+  it("returns null balance for a counterparty account in transaction results", async () => {
+    TransactionModel.findById.mockResolvedValue(
+      createTransactionDocument({
+        id: "transaction-1",
+        fromAccountId: "account-1",
+        toAccountId: "account-2",
+      }),
+    );
+    AccountModel.findOne.mockResolvedValue(
+      createAccountDocument({
+        id: "account-1",
+        userId: "user-1",
+      }),
+    );
+    AccountModel.findById.mockResolvedValue(
+      createAccountDocument({
+        id: "account-2",
+        userId: "user-2",
+      }),
+    );
+
+    const result = await executeGraphQL(
+      `
+        query {
+          transaction(id: "transaction-1") {
+            id
+            toAccount {
+              balance
+            }
+          }
+        }
+      `,
+      {
+        auth: {
+          userId: "user-1",
+          role: "USER",
+        },
+      },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({
+      transaction: {
+        id: "transaction-1",
+        toAccount: {
+          balance: null,
+        },
+      },
     });
   });
 

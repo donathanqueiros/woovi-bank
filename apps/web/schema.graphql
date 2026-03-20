@@ -1,5 +1,6 @@
 type Query {
   me: Me
+  users: [User!]!
   account(id: ID!): Account
   accounts(page: Int, limit: Int): [Account!]!
   accountsCount: Int!
@@ -25,10 +26,30 @@ enum QueryUserRole {
   ADMIN
 }
 
+enum KycStatus {
+  PENDING_SUBMISSION
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+type User {
+  id: ID!
+  email: String!
+  role: UserRole!
+  active: Boolean!
+  createdAt: String!
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
 type Account {
   id: ID!
   holderName: String!
-  balance: Float!
+  balance: Float
   createdAt: String!
 }
 
@@ -37,7 +58,6 @@ type Transaction {
   fromAccount: Account!
   toAccount: Account!
   amount: Float!
-  idempotencyKey: String!
   description: String
   createdAt: String!
 }
@@ -64,6 +84,42 @@ enum DepositRequestStatus {
   EXPIRED
 }
 
+type Kyc {
+  id: ID!
+  status: KycStatus!
+  personalInfo: KycPersonalInfo
+  address: KycAddress
+  identity: KycIdentity
+  submittedAt: String
+  reviewNotes: String
+}
+
+type KycPersonalInfo {
+  fullName: String
+  email: String
+  phone: String
+  dateOfBirth: String
+  country: String
+}
+
+type KycAddress {
+  street: String
+  city: String
+  state: String
+  postalCode: String
+}
+
+type KycIdentity {
+  idType: KycIdType
+  idNumber: String
+}
+
+enum KycIdType {
+  PASSPORT
+  DRIVERS_LICENSE
+  RG
+}
+
 type Mutation {
   AddCredit(accountId: String!, amount: Float!, idempotencyKey: String!): Account!
   CreateAccount(holderName: String!): Account!
@@ -73,42 +129,12 @@ type Mutation {
   Login(email: String!, password: String!): AuthPayload!
   Logout: Boolean!
   SignUp(email: String!, password: String!): AuthPayload!
-  SubmitKyc(
-    fullName: String!
-    email: String!
-    phone: String!
-    dateOfBirth: String!
-    country: String!
-    street: String!
-    city: String!
-    state: String!
-    postalCode: String!
-    proofDocumentBase64: String
-    proofDocumentMimeType: String
-    idType: String!
-    idNumber: String!
-    frontImageBase64: String!
-    backImageBase64: String
-    selfieBase64: String!
-  ): Kyc!
+  SubmitKyc(fullName: String!, email: String!, phone: String!, dateOfBirth: String!, country: String!, street: String!, city: String!, state: String!, postalCode: String!, proofDocumentBase64: String, proofDocumentMimeType: String, idType: String!, idNumber: String!, frontImageBase64: String!, backImageBase64: String, selfieBase64: String!): Kyc!
 }
 
 type AuthPayload {
   user: User!
   account: Account!
-}
-
-type User {
-  id: ID!
-  email: String!
-  role: UserRole!
-  active: Boolean!
-  createdAt: String!
-}
-
-enum UserRole {
-  USER
-  ADMIN
 }
 
 type Subscription {
@@ -133,47 +159,4 @@ type TransferReceived {
   amount: Float!
   description: String
   createdAt: String!
-}
-
-enum KycStatus {
-  PENDING_SUBMISSION
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
-}
-
-enum KycIdType {
-  PASSPORT
-  DRIVERS_LICENSE
-  RG
-}
-
-type KycPersonalInfo {
-  fullName: String
-  email: String
-  phone: String
-  dateOfBirth: String
-  country: String
-}
-
-type KycAddress {
-  street: String
-  city: String
-  state: String
-  postalCode: String
-}
-
-type KycIdentity {
-  idType: KycIdType
-  idNumber: String
-}
-
-type Kyc {
-  id: ID!
-  status: KycStatus!
-  personalInfo: KycPersonalInfo
-  address: KycAddress
-  identity: KycIdentity
-  submittedAt: String
-  reviewNotes: String
 }

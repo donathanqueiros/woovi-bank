@@ -24,7 +24,7 @@ const ACCOUNTS_QUERY = `
 type Account = {
   id: string;
   holderName: string;
-  balance: number;
+  balance: number | null;
   createdAt: string;
 };
 
@@ -170,7 +170,7 @@ export default function AccountsListPage() {
                         Saldo atual
                       </p>
                       <p className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
-                        {formatBalance(account.balance)}
+                        {formatBalance(account.balance ?? 0)}
                       </p>
                     </div>
                   ) : (
