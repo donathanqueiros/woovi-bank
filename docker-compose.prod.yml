@@ -66,10 +66,7 @@ services:
       - WOOVI_BASE_URL=${WOOVI_BASE_URL:?}
       - ADM_EMAIL=${ADM_EMAIL:?}
       - ADM_PASSWORD=${ADM_PASSWORD:?}
-
     restart: always
-    env_file:
-      - .env
 
   web:
     build:
@@ -84,8 +81,26 @@ services:
     ports:
       - "4173:80"
     restart: always
-    env_file:
-      - .env
 
 volumes:
   mongodb_data:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
