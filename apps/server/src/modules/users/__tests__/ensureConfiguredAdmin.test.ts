@@ -41,7 +41,7 @@ describe("ensureConfiguredAdmin", () => {
   });
 
   it("cria um unico admin com conta a partir do env quando ainda nao existe", async () => {
-    process.env.ADM_EMAIL = "Admin@Woovi.com ";
+    process.env.ADM_EMAIL = "Admin@Subli.com ";
     process.env.ADM_PASSWORD = "StrongPass123";
 
     const userDoc = {
@@ -90,7 +90,7 @@ describe("ensureConfiguredAdmin", () => {
   });
 
   it("nao cria outro admin quando o usuario configurado ja existe", async () => {
-    process.env.ADM_EMAIL = "admin@woovi.com";
+    process.env.ADM_EMAIL = "admin@subli.com";
     process.env.ADM_PASSWORD = "StrongPass123";
 
     UserModel.findOne.mockResolvedValue({

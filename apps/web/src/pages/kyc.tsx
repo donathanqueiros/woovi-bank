@@ -531,7 +531,7 @@ export default function KycPage() {
       <div className="mx-auto max-w-2xl">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Woovi Bank
+            Subli Bank
           </p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground sm:text-3xl">
             {t("kyc.title")}

@@ -92,7 +92,7 @@ export function DashboardSidebar({
 
       <aside className="sticky top-4 hidden h-[calc(100svh-2rem)] w-72 shrink-0 rounded-2xl border border-border bg-card p-4 lg:block">
         <p className="text-xs uppercase tracking-[0.2em] text-amber-700">Navegacao</p>
-        <h2 className="mt-2 text-lg font-semibold">Woovi Bank</h2>
+        <h2 className="mt-2 text-lg font-semibold">Subli Bank</h2>
         <p className="mt-1 text-sm text-muted-foreground">Acesso rapido do painel</p>
         <div className="mt-5">
           <SidebarNav items={items} activeItemId={activeItemId} onSelect={onSelect} />
@@ -118,7 +118,7 @@ export function DashboardSidebar({
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-amber-700">Navegacao</p>
-            <h2 className="mt-2 text-lg font-semibold">Woovi Bank</h2>
+            <h2 className="mt-2 text-lg font-semibold">Subli Bank</h2>
           </div>
           <Button
             variant="outline"

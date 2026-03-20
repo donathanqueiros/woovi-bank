@@ -4,7 +4,7 @@ describe("createPostmanCollection", () => {
 	it("builds a Postman v2.1 collection targeting the GraphQL endpoint", () => {
 		const collection = createPostmanCollection("http://localhost:4000");
 
-		expect(collection.info.name).toBe("Woovi Bank GraphQL API");
+		expect(collection.info.name).toBe("Subli Bank GraphQL API");
 		expect(collection.info.schema).toBe(
 			"https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		);

@@ -183,7 +183,7 @@ describe("QueryType", () => {
   it("returns me with accountId when authenticated", async () => {
     UserModel.findById.mockResolvedValue({
       id: "user-1",
-      email: "ana@woovi.com",
+      email: "ana@subli.com",
       role: "USER",
       active: true,
     });
@@ -216,7 +216,7 @@ describe("QueryType", () => {
     expect(result.data).toEqual({
       me: {
         id: "user-1",
-        email: "ana@woovi.com",
+        email: "ana@subli.com",
         role: "USER",
         active: true,
         accountId: "account-1",
@@ -228,13 +228,13 @@ describe("QueryType", () => {
     UserModel.find.mockResolvedValue([
       {
         id: "user-1",
-        email: "ana@woovi.com",
+        email: "ana@subli.com",
         role: "USER",
         active: true,
       },
       {
         id: "user-2",
-        email: "bruno@woovi.com",
+        email: "bruno@subli.com",
         role: "ADMIN",
         active: true,
       },
@@ -269,13 +269,13 @@ describe("QueryType", () => {
       users: [
         {
           id: "user-1",
-          email: "ana@woovi.com",
+          email: "ana@subli.com",
           role: "USER",
           active: true,
         },
         {
           id: "user-2",
-          email: "bruno@woovi.com",
+          email: "bruno@subli.com",
           role: "ADMIN",
           active: true,
         },
@@ -437,7 +437,7 @@ describe("QueryType", () => {
   it("returns APPROVED for me.kycStatus when user is ADMIN", async () => {
     UserModel.findById.mockResolvedValue({
       id: "admin-1",
-      email: "admin@woovi.com",
+      email: "admin@subli.com",
       role: "ADMIN",
       active: true,
     });
@@ -465,7 +465,7 @@ describe("QueryType", () => {
   it("returns PENDING_SUBMISSION for me.kycStatus when user has no KYC", async () => {
     UserModel.findById.mockResolvedValue({
       id: "user-2",
-      email: "novo@woovi.com",
+      email: "novo@subli.com",
       role: "USER",
       active: true,
     });
@@ -494,7 +494,7 @@ describe("QueryType", () => {
   it("returns KYC status for me.kycStatus when KYC exists", async () => {
     UserModel.findById.mockResolvedValue({
       id: "user-3",
-      email: "aprovado@woovi.com",
+      email: "aprovado@subli.com",
       role: "USER",
       active: true,
     });

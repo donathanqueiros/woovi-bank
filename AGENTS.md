@@ -1,4 +1,4 @@
-# AGENTS.md — Woovi Bank
+# AGENTS.md — Subli Bank
 
 ## Escopo
 

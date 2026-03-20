@@ -54,7 +54,7 @@ export default function App() {
               </Badge>
               <div className="space-y-4">
                 <p className="text-xs uppercase tracking-[0.32em] text-primary">
-                  Woovi Bank
+                  Subli Bank
                 </p>
                 <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-foreground sm:text-5xl sm:leading-[1.02]">
                   Interface financeira com clareza visual para operar, analisar e decidir.

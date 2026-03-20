@@ -12,7 +12,7 @@ export type AuthUser = {
   kycStatus: KycStatus;
 };
 
-export const AUTH_STORAGE_KEY = "woovi-auth-user";
+export const AUTH_STORAGE_KEY = "subli-auth-user";
 
 export function readStoredAuthUser() {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);

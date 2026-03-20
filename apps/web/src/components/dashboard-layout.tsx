@@ -93,7 +93,7 @@ export function DashboardLayout() {
     },
   };
   const pageMeta = pageTitles[location.pathname] ?? {
-    title: "Woovi Bank",
+    title: "Subli Bank",
     description: t("dashboard.pages.defaultDescription"),
   };
 
@@ -113,7 +113,7 @@ export function DashboardLayout() {
         <SidebarHeader className="px-3 pb-4 pt-4">
           <div className="rounded-[20px] border border-sidebar-border/80 bg-card/70 px-4 py-4 shadow-[0_18px_34px_-26px_color-mix(in_oklab,var(--foreground)_18%,transparent)]">
             <p className="text-xs uppercase tracking-[0.28em] text-primary">
-              Woovi Bank
+              Subli Bank
             </p>
             <p className="mt-3 text-sm font-semibold text-foreground">
               {user?.email}

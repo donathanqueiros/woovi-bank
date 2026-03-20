@@ -81,7 +81,7 @@ describe("Auth mutations", () => {
     const endSession = jest.fn();
     const userDoc = {
       id: "user-1",
-      email: "ana@woovi.com",
+      email: "ana@subli.com",
       role: "USER",
       active: true,
       save: jest.fn().mockResolvedValue(undefined),
@@ -115,7 +115,7 @@ describe("Auth mutations", () => {
     const result = await executeGraphQL(
       `
       mutation {
-        SignUp(email: "ana@woovi.com", password: "StrongPass123") {
+        SignUp(email: "ana@subli.com", password: "StrongPass123") {
           user {
             id
             email
@@ -138,7 +138,7 @@ describe("Auth mutations", () => {
     );
 
     expect(result.errors).toBeUndefined();
-    expect(UserModel.findOne).toHaveBeenCalledWith({ email: "ana@woovi.com" });
+    expect(UserModel.findOne).toHaveBeenCalledWith({ email: "ana@subli.com" });
     expect(UserModel).toHaveBeenCalled();
     expect(AccountModel).toHaveBeenCalledWith({
       userId: "user-1",
@@ -156,7 +156,7 @@ describe("Auth mutations", () => {
       SignUp: {
         user: {
           id: "user-1",
-          email: "ana@woovi.com",
+          email: "ana@subli.com",
           role: "USER",
           active: true,
         },
@@ -169,13 +169,13 @@ describe("Auth mutations", () => {
   });
 
   it("mantem signup como usuario mesmo quando o email bate com o admin configurado", async () => {
-    process.env.ADM_EMAIL = "admin@woovi.com";
+    process.env.ADM_EMAIL = "admin@subli.com";
     process.env.ADM_PASSWORD = "StrongPass123";
     const setSessionCookie = jest.fn();
     const endSession = jest.fn();
     const userDoc = {
       id: "user-admin",
-      email: "admin@woovi.com",
+      email: "admin@subli.com",
       role: "USER",
       active: true,
       save: jest.fn().mockResolvedValue(undefined),
@@ -208,7 +208,7 @@ describe("Auth mutations", () => {
     const result = await executeGraphQL(
       `
         mutation {
-          SignUp(email: "admin@woovi.com", password: "StrongPass123") {
+          SignUp(email: "admin@subli.com", password: "StrongPass123") {
             user {
               id
               email
@@ -241,7 +241,7 @@ describe("Auth mutations", () => {
       SignUp: {
         user: {
           id: "user-admin",
-          email: "admin@woovi.com",
+          email: "admin@subli.com",
           role: "USER",
         },
       },
@@ -253,7 +253,7 @@ describe("Auth mutations", () => {
     const endSession = jest.fn();
     const userDoc = {
       id: "user-standalone",
-      email: "solo@woovi.com",
+      email: "solo@subli.com",
       role: "USER",
       active: true,
       save: jest.fn().mockResolvedValue(undefined),
@@ -291,7 +291,7 @@ describe("Auth mutations", () => {
     const result = await executeGraphQL(
       `
         mutation {
-          SignUp(email: "solo@woovi.com", password: "StrongPass123") {
+          SignUp(email: "solo@subli.com", password: "StrongPass123") {
             user {
               id
               email
@@ -332,7 +332,7 @@ describe("Auth mutations", () => {
       SignUp: {
         user: {
           id: "user-standalone",
-          email: "solo@woovi.com",
+          email: "solo@subli.com",
         },
         account: {
           id: "account-standalone",
@@ -347,7 +347,7 @@ describe("Auth mutations", () => {
 
     UserModel.findOne.mockResolvedValue({
       id: "user-1",
-      email: "ana@woovi.com",
+      email: "ana@subli.com",
       passwordHash: await hashPassword("StrongPass123"),
       role: "USER",
       active: true,
@@ -369,7 +369,7 @@ describe("Auth mutations", () => {
     const result = await executeGraphQL(
       `
         mutation {
-          Login(email: "ana@woovi.com", password: "StrongPass123") {
+          Login(email: "ana@subli.com", password: "StrongPass123") {
             user {
               id
               email
@@ -399,7 +399,7 @@ describe("Auth mutations", () => {
       Login: {
         user: {
           id: "user-1",
-          email: "ana@woovi.com",
+          email: "ana@subli.com",
           role: "USER",
         },
         account: {
@@ -445,7 +445,7 @@ describe("Auth mutations", () => {
   it("retorna usuario autenticado em me", async () => {
     UserModel.findById.mockResolvedValue({
       id: "user-1",
-      email: "ana@woovi.com",
+      email: "ana@subli.com",
       role: "USER",
       active: true,
     });
@@ -474,7 +474,7 @@ describe("Auth mutations", () => {
     expect(result.data).toEqual({
       me: {
         id: "user-1",
-        email: "ana@woovi.com",
+        email: "ana@subli.com",
         role: "USER",
         active: true,
       },

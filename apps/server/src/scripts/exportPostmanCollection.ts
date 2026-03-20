@@ -6,7 +6,7 @@ import {
 	createPostmanCollection,
 } from "./postmanCollection";
 
-const DEFAULT_OUTPUT_PATH = "postman/woovi-bank-graphql.collection.json";
+const DEFAULT_OUTPUT_PATH = "postman/subli-bank-graphql.collection.json";
 
 export async function exportPostmanCollection(
 	outputPath = DEFAULT_OUTPUT_PATH,

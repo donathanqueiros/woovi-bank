@@ -8,18 +8,6 @@ export function startJobs() {
     await cleanExpiredSessions();
   });
 
-  //   cron.schedule("*/1 * * * *", async () => {
-  //     console.log("[jobs] Running periodic job at", new Date().toISOString());
-  //   });
-
-  (async () => {
-    const woovi = getWooviClient();
-    console.log(
-      await woovi.charge.list().catch((err) => {
-        console.error("[jobs] Error fetching charges from Woovi:", err);
-      }),
-    );
-  })();
 
   console.log("[jobs] Cron jobs started");
 }

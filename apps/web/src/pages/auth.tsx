@@ -121,7 +121,7 @@ export default function AuthPage() {
             </Badge>
             <div className="space-y-4">
               <p className="text-xs uppercase tracking-[0.32em] text-primary">
-                Woovi Bank
+                Subli Bank
               </p>
               <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-foreground">
                 Uma experiencia mais clara para operar contas, saldo e historico.

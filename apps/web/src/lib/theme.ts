@@ -1,5 +1,5 @@
-export const THEME_STORAGE_KEY = "woovi-bank-theme";
-export const COLOR_MODE_STORAGE_KEY = "woovi-bank-color-mode";
+export const THEME_STORAGE_KEY = "subli-bank-theme";
+export const COLOR_MODE_STORAGE_KEY = "subli-bank-color-mode";
 
 export const THEMES = ["slate-blue", "graphite-amber", "stone-emerald"] as const;
 export const COLOR_MODES = ["light", "dark"] as const;

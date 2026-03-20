@@ -196,7 +196,7 @@ describe("CreateDeposit mutation", () => {
     });
   });
 
-  it("retorna erro normalizado quando cliente da Woovi lanca objeto nao-Error", async () => {
+  it("retorna erro normalizado quando cliente da Subli lanca objeto nao-Error", async () => {
     AccountModel.findOne.mockResolvedValue(
       createAccountDocument({ id: "account-1", userId: "user-1", active: true }),
     );

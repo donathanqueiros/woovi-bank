@@ -50,7 +50,7 @@ services:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
-    container_name: woovi-server
+    container_name: subli-server
     depends_on:
       mongodb:
         condition: service_healthy
@@ -64,7 +64,7 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    container_name: woovi-web
+    container_name: subli-web
     depends_on:
       server:
         condition: service_started

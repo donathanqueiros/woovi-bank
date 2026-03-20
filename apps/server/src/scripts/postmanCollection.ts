@@ -235,7 +235,7 @@ export function createPostmanCollection(
 	return {
 		info: {
 			_postman_id: "2f1cf5df-4f7f-4fef-90cf-2d4d8f6b8d31",
-			name: "Woovi Bank GraphQL API",
+			name: "Subli Bank GraphQL API",
 			schema: POSTMAN_COLLECTION_SCHEMA,
 			description: "Collection para chamadas GraphQL do backend (/graphql).",
 		},
