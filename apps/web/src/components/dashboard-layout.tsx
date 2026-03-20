@@ -1,12 +1,12 @@
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useNavigate } from "react-router";
 import {
   ArrowRightLeft,
   Landmark,
-  SendHorizontal,
   ShieldCheck,
   User,
 } from "lucide-react";
 import { useAuth } from "@/lib/use-auth";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -40,13 +40,8 @@ const NAV_ITEMS = [
   },
   {
     path: "/transactions",
-    label: "Transacoes",
+    label: "Historico",
     icon: ArrowRightLeft,
-  },
-  {
-    path: "/transfer",
-    label: "Transferencias",
-    icon: SendHorizontal,
   },
   {
     path: "/profile",
@@ -65,6 +60,7 @@ const ADMIN_ITEMS = [
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   async function handleLogout() {
     try {
@@ -153,6 +149,9 @@ export function DashboardLayout() {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <p className="text-sm text-muted-foreground">Woovi Bank</p>
+          <Button size="sm" className="ml-auto" onClick={() => navigate("/transfer")}>
+            Fazer transferencia
+          </Button>
         </header>
 
         <div className="flex-1 p-4 sm:p-6">
