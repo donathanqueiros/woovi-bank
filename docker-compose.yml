@@ -69,7 +69,7 @@ services:
       server:
         condition: service_started
     ports:
-      - "4173:4173"
+      - "4173:80"
     restart: always
 
 volumes:

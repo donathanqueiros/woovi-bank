@@ -28,12 +28,11 @@ RUN pnpm --dir apps/web relay
 
 RUN pnpm --dir apps/web build
 
-FROM deps AS runtime
+FROM nginx:1.29-alpine AS runtime
 
-WORKDIR /app/apps/web
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 
-COPY --from=build /app/apps/web/dist dist
+EXPOSE 80
 
-EXPOSE 4173
-
-CMD ["pnpm", "preview", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["nginx", "-g", "daemon off;"]
