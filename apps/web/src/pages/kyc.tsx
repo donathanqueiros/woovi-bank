@@ -91,6 +91,15 @@ const slideVariants = {
   }),
 };
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function KycPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -123,18 +132,16 @@ export default function KycPage() {
     })(),
   });
 
-  // Auto-save draft to localStorage with debounce
   useEffect(() => {
     const subscription = watch((values) => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
       draftTimerRef.current = setTimeout(() => {
-        // Don't persist base64 blobs to avoid quota issues – keep only text
-        const { selfieBase64, frontImageBase64, backImageBase64, proofDocumentBase64, ...textValues } =
+        const { selfieBase64, frontImageFile, backImageFile, proofDocumentFile, ...textValues } =
           values as KycFormData;
         void selfieBase64;
-        void frontImageBase64;
-        void backImageBase64;
-        void proofDocumentBase64;
+        void frontImageFile;
+        void backImageFile;
+        void proofDocumentFile;
         localStorage.setItem(DRAFT_KEY, JSON.stringify(textValues));
       }, 500);
     });
@@ -173,7 +180,6 @@ export default function KycPage() {
     const schema = STEP_SCHEMAS[currentStep];
     if (!schema) return;
 
-    // Validate only the current step's fields
     const fieldNames = Object.keys(schema.shape ?? {}) as Array<keyof KycFormData>;
     const valid = await trigger(fieldNames);
     if (!valid) return;
@@ -195,6 +201,19 @@ export default function KycPage() {
   const onSubmit = handleSubmit(async (data: KycFormData) => {
     setIsSubmitting(true);
     try {
+      const [proofDocumentBase64, frontImageBase64, backImageBase64] =
+        await Promise.all([
+          data.proofDocumentFile
+            ? fileToBase64(data.proofDocumentFile)
+            : Promise.resolve(null),
+          data.frontImageFile
+            ? fileToBase64(data.frontImageFile)
+            : Promise.resolve(null),
+          data.backImageFile
+            ? fileToBase64(data.backImageFile)
+            : Promise.resolve(null),
+        ]);
+
       await graphqlRequest(SUBMIT_KYC_MUTATION, {
         fullName: data.fullName,
         email: data.email,
@@ -205,12 +224,12 @@ export default function KycPage() {
         city: data.city,
         state: data.state,
         postalCode: data.postalCode,
-        proofDocumentBase64: data.proofDocumentBase64 ?? null,
-        proofDocumentMimeType: data.proofDocumentMimeType ?? null,
+        proofDocumentBase64,
+        proofDocumentMimeType: data.proofDocumentFile?.type ?? null,
         idType: data.idType,
         idNumber: data.idNumber,
-        frontImageBase64: data.frontImageBase64,
-        backImageBase64: data.backImageBase64 ?? null,
+        frontImageBase64,
+        backImageBase64,
         selfieBase64: data.selfieBase64,
       });
 

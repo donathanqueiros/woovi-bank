@@ -4,23 +4,32 @@ import { fn } from "storybook/test";
 import { ReviewStep } from "./ReviewStep";
 import type { KycFormData } from "./kyc-schemas";
 
+const proofDocumentFile = new File(["proof"], "comprovante.pdf", {
+  type: "application/pdf",
+});
+const frontImageFile = new File(["front"], "documento-frente.png", {
+  type: "image/png",
+});
+const backImageFile = new File(["back"], "documento-verso.png", {
+  type: "image/png",
+});
+
 function ReviewStory() {
   const defaultValues: KycFormData = {
-    fullName: "João Silva",
+    fullName: "Joao Silva",
     email: "joao@example.com",
     phone: "+5511999990000",
     dateOfBirth: "1990-05-15",
     country: "BR",
     street: "Rua das Flores, 123",
-    city: "São Paulo",
+    city: "Sao Paulo",
     state: "SP",
     postalCode: "01310-100",
-    proofDocumentBase64: "data:application/pdf;base64,abc",
-    proofDocumentMimeType: "application/pdf",
+    proofDocumentFile,
     idType: "RG",
     idNumber: "529.982.247-25",
-    frontImageBase64: "data:image/png;base64,abc",
-    backImageBase64: "data:image/png;base64,def",
+    frontImageFile,
+    backImageFile,
     selfieBase64: "data:image/png;base64,ghi",
     termsAccepted: true,
   };

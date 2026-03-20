@@ -4,8 +4,7 @@ import { fn } from "storybook/test";
 import { FileUpload } from "./file-upload";
 
 function InteractiveFileUpload(args: ComponentProps<typeof FileUpload>) {
-  const [base64, setBase64] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
 
   return (
     <div className="flex w-100 flex-col gap-3">
@@ -15,15 +14,15 @@ function InteractiveFileUpload(args: ComponentProps<typeof FileUpload>) {
       </div>
       <FileUpload
         {...args}
-        onChange={(file, value) => {
-          setFileName(file?.name ?? null);
-          setBase64(value);
-          args.onChange?.(file, value);
+        value={file}
+        onChange={(nextFile) => {
+          setFile(nextFile);
+          args.onChange?.(nextFile);
         }}
       />
-      {fileName && (
+      {file && (
         <p className="text-xs text-muted-foreground">
-          Selecionado: {fileName} - base64 len: {base64?.length ?? 0}
+          Selecionado: {file.name} - tamanho: {file.size} bytes
         </p>
       )}
     </div>

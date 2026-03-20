@@ -34,6 +34,8 @@ function isValidCpf(cpf: string): boolean {
 
 /** Phone: E.164 format  e.g. +5511999999999  */
 const PHONE_REGEX = /^\+[1-9]\d{6,14}$/;
+const fileSchema = z.custom<File>((value) => value instanceof File);
+const optionalFileSchema = fileSchema.optional();
 
 // ─── Step 1: Personal Info ──────────────────────────────────────────────────
 
@@ -67,8 +69,7 @@ export const addressSchema = z.object({
   city: z.string().min(1, "kyc.validation.required"),
   state: z.string().min(1, "kyc.validation.required"),
   postalCode: z.string().min(1, "kyc.validation.required"),
-  proofDocumentBase64: z.string().optional(),
-  proofDocumentMimeType: z.string().optional(),
+  proofDocumentFile: optionalFileSchema,
 });
 
 export type AddressFormData = z.infer<typeof addressSchema>;
@@ -81,8 +82,8 @@ export const identitySchema = z
   .object({
     idType: idTypeEnum.refine((v) => Boolean(v), "kyc.validation.required"),
     idNumber: z.string().min(1, "kyc.validation.required"),
-    frontImageBase64: z.string().optional(),
-    backImageBase64: z.string().optional(),
+    frontImageFile: optionalFileSchema,
+    backImageFile: optionalFileSchema,
   })
   .superRefine((data, ctx) => {
     // CPF validation for RG (Brazilian ID) and Driver's License

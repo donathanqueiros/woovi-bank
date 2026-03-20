@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UploadCloud, X, File as FileIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 type FileUploadProps = {
   accept?: string;
   maxSizeBytes?: number;
-  onChange?: (file: File | null, base64: string | null) => void;
+  value?: File | null;
+  onChange?: (file: File | null) => void;
   error?: string;
   disabled?: boolean;
   className?: string;
@@ -15,15 +16,6 @@ type FileUploadProps = {
 
 const DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"];
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -34,6 +26,7 @@ function formatBytes(bytes: number) {
 function FileUpload({
   accept = "image/jpeg,image/png,application/pdf",
   maxSizeBytes = DEFAULT_MAX_SIZE,
+  value,
   onChange,
   error,
   disabled,
@@ -42,11 +35,19 @@ function FileUpload({
 }: FileUploadProps) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<{ name: string; size: number } | null>(
-    null,
-  );
   const [isDragging, setIsDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const activeFile = value ?? null;
+  const imagePreviewUrl = useMemo(() => {
+    if (!activeFile?.type.startsWith("image/")) return null;
+    return URL.createObjectURL(activeFile);
+  }, [activeFile]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
 
   const validate = useCallback(
     (file: File): string | null => {
@@ -66,13 +67,11 @@ function FileUpload({
       const validationError = validate(file);
       if (validationError) {
         setLocalError(validationError);
-        onChange?.(null, null);
+        onChange?.(null);
         return;
       }
       setLocalError(null);
-      setPreview({ name: file.name, size: file.size });
-      const base64 = await fileToBase64(file);
-      onChange?.(file, base64);
+      onChange?.(file);
     },
     [onChange, validate],
   );
@@ -99,14 +98,13 @@ function FileUpload({
   );
 
   const handleClear = useCallback(() => {
-    setPreview(null);
     setLocalError(null);
     if (inputRef.current) inputRef.current.value = "";
-    onChange?.(null, null);
+    onChange?.(null);
   }, [onChange]);
 
   const displayError = error ?? localError;
-  const hasFile = Boolean(preview);
+  const hasFile = Boolean(activeFile);
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -149,15 +147,23 @@ function FileUpload({
           aria-hidden="true"
         />
 
-        {hasFile && preview ? (
+        {hasFile && activeFile ? (
           <div className="flex w-full items-center gap-3">
-            <FileIcon className="size-8 shrink-0 text-(--success)" />
+            {imagePreviewUrl ? (
+              <img
+                src={imagePreviewUrl}
+                alt={activeFile.name}
+                className="size-12 shrink-0 rounded-md object-cover"
+              />
+            ) : (
+              <FileIcon className="size-8 shrink-0 text-(--success)" />
+            )}
             <div className="min-w-0 flex-1 text-left">
               <p className="truncate text-sm font-medium text-foreground">
-                {preview.name}
+                {activeFile.name}
               </p>
               <p className="text-xs text-muted-foreground">
-                {formatBytes(preview.size)}
+                {formatBytes(activeFile.size)}
               </p>
             </div>
             <button

@@ -98,13 +98,14 @@ export function IdentityStep({ control, errors }: IdentityStepProps) {
             {t("kyc.identity.frontImage")}{" "}
           </p>
           <Controller
-            name="frontImageBase64"
+            name="frontImageFile"
             control={control}
             render={({ field }) => (
               <FileUpload
                 accept="image/jpeg,image/png"
-                onChange={(_file, base64) => field.onChange(base64 ?? "")}
-                error={t(errors.frontImageBase64?.message || "")}
+                value={field.value}
+                onChange={field.onChange}
+                error={t(errors.frontImageFile?.message || "")}
               />
             )}
           />
@@ -119,13 +120,14 @@ export function IdentityStep({ control, errors }: IdentityStepProps) {
               {t("kyc.identity.backImage")}
             </p>
             <Controller
-              name="backImageBase64"
+              name="backImageFile"
               control={control}
               render={({ field }) => (
                 <FileUpload
                   accept="image/jpeg,image/png"
-                  onChange={(_file, base64) => field.onChange(base64 ?? "")}
-                  error={t(errors.backImageBase64?.message || "")}
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={t(errors.backImageFile?.message || "")}
                 />
               )}
             />

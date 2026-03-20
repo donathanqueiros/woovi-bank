@@ -115,14 +115,15 @@ export function AddressStep({ control, errors }: AddressStepProps) {
             {t("kyc.address.proofDocument")}
           </p>
           <Controller
-            name="proofDocumentBase64"
+            name="proofDocumentFile"
             control={control}
             render={({ field }) => (
               <FileUpload
-                onChange={(_file, base64) => {
-                  field.onChange(base64 ?? "");
+                value={field.value}
+                onChange={(file) => {
+                  field.onChange(file ?? undefined);
                 }}
-                error={t(errors.proofDocumentBase64?.message || "")}
+                error={errors.proofDocumentFile?.message}
               />
             )}
           />

@@ -61,9 +61,8 @@ export function ReviewStep({
         { label: t("kyc.address.postalCode"), value: values.postalCode },
         {
           label: t("kyc.address.proofDocument"),
-          value: values.proofDocumentBase64
-            ? t("kyc.review.documentUploaded")
-            : undefined,
+          value: values.proofDocumentFile?.name
+            ?? (values.proofDocumentFile ? t("kyc.review.documentUploaded") : undefined),
         },
       ],
     },
@@ -75,15 +74,13 @@ export function ReviewStep({
         { label: t("kyc.identity.idNumber"), value: values.idNumber },
         {
           label: t("kyc.identity.frontImage"),
-          value: values.frontImageBase64
-            ? t("kyc.review.documentUploaded")
-            : undefined,
+          value: values.frontImageFile?.name
+            ?? (values.frontImageFile ? t("kyc.review.documentUploaded") : undefined),
         },
         {
           label: t("kyc.identity.backImage"),
-          value: values.backImageBase64
-            ? t("kyc.review.documentUploaded")
-            : undefined,
+          value: values.backImageFile?.name
+            ?? (values.backImageFile ? t("kyc.review.documentUploaded") : undefined),
         },
       ],
     },
