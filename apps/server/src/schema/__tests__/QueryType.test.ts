@@ -44,14 +44,27 @@ jest.mock("../../modules/deposits/DepositRequestModel", () => {
   return { DepositRequest };
 });
 
+jest.mock("../../modules/kyc/KycModel", () => {
+  const Kyc = {
+    findOne: jest.fn(),
+  };
+
+  return { Kyc };
+});
+
 import { createAccountDocument } from "../../__tests__/factories/createAccountDocument";
 import { createTransactionDocument } from "../../__tests__/factories/createTransactionDocument";
 import { executeGraphQL } from "../../__tests__/helpers/executeGraphQL";
 import { Account } from "../../modules/accounts/AccountModel";
 import { DepositRequest } from "../../modules/deposits/DepositRequestModel";
+import { Kyc } from "../../modules/kyc/KycModel";
 import { LedgerEntry } from "../../modules/ledger/LedgerEntryModel";
 import { Transaction } from "../../modules/transactions/TransactionModel";
 import { User } from "../../modules/users/UserModel";
+
+const KycModel = Kyc as unknown as {
+  findOne: jest.Mock;
+};
 
 const AccountModel = Account as unknown as jest.Mock & {
   find: jest.Mock;
@@ -288,6 +301,133 @@ describe("QueryType", () => {
     });
     expect(result.data).toEqual({
       transactionsCount: 14,
+    });
+  });
+
+  it("returns myKyc for authenticated user", async () => {
+    KycModel.findOne.mockResolvedValue({
+      id: "kyc-1",
+      status: "UNDER_REVIEW",
+      submittedAt: new Date("2026-01-01T00:00:00.000Z"),
+      personalInfo: { fullName: "Ana Lima" },
+    });
+
+    const result = await executeGraphQL(
+      `
+        query {
+          myKyc {
+            id
+            status
+          }
+        }
+      `,
+      { auth: { userId: "user-1", role: "USER" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(KycModel.findOne).toHaveBeenCalledWith({ userId: "user-1" });
+    expect(result.data).toEqual({
+      myKyc: { id: "kyc-1", status: "UNDER_REVIEW" },
+    });
+  });
+
+  it("returns null for myKyc when unauthenticated", async () => {
+    const result = await executeGraphQL(`
+      query {
+        myKyc {
+          id
+          status
+        }
+      }
+    `);
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({ myKyc: null });
+    expect(KycModel.findOne).not.toHaveBeenCalled();
+  });
+
+  it("returns APPROVED for me.kycStatus when user is ADMIN", async () => {
+    UserModel.findById.mockResolvedValue({
+      id: "admin-1",
+      email: "admin@woovi.com",
+      role: "ADMIN",
+      active: true,
+    });
+    AccountModel.findOne.mockResolvedValue(null);
+
+    const result = await executeGraphQL(
+      `
+        query {
+          me {
+            id
+            kycStatus
+          }
+        }
+      `,
+      { auth: { userId: "admin-1", role: "ADMIN" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({
+      me: { id: "admin-1", kycStatus: "APPROVED" },
+    });
+    expect(KycModel.findOne).not.toHaveBeenCalled();
+  });
+
+  it("returns PENDING_SUBMISSION for me.kycStatus when user has no KYC", async () => {
+    UserModel.findById.mockResolvedValue({
+      id: "user-2",
+      email: "novo@woovi.com",
+      role: "USER",
+      active: true,
+    });
+    AccountModel.findOne.mockResolvedValue(null);
+    KycModel.findOne.mockResolvedValue(null);
+
+    const result = await executeGraphQL(
+      `
+        query {
+          me {
+            id
+            kycStatus
+          }
+        }
+      `,
+      { auth: { userId: "user-2", role: "USER" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(KycModel.findOne).toHaveBeenCalledWith({ userId: "user-2" });
+    expect(result.data).toEqual({
+      me: { id: "user-2", kycStatus: "PENDING_SUBMISSION" },
+    });
+  });
+
+  it("returns KYC status for me.kycStatus when KYC exists", async () => {
+    UserModel.findById.mockResolvedValue({
+      id: "user-3",
+      email: "aprovado@woovi.com",
+      role: "USER",
+      active: true,
+    });
+    AccountModel.findOne.mockResolvedValue(null);
+    KycModel.findOne.mockResolvedValue({ status: "APPROVED" });
+
+    const result = await executeGraphQL(
+      `
+        query {
+          me {
+            id
+            kycStatus
+          }
+        }
+      `,
+      { auth: { userId: "user-3", role: "USER" } },
+    );
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({
+      me: { id: "user-3", kycStatus: "APPROVED" },
     });
   });
 

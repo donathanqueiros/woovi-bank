@@ -1,0 +1,123 @@
+{
+  "kyc": {
+    "title": "Verificação de identidade",
+    "subtitle": "Complete as etapas abaixo para verificar sua conta",
+    "steps": {
+      "personalInfo": "Informações pessoais",
+      "address": "Endereço",
+      "identity": "Identidade",
+      "selfie": "Selfie",
+      "review": "Revisão"
+    },
+    "navigation": {
+      "next": "Próximo",
+      "back": "Voltar",
+      "submit": "Enviar verificação",
+      "submitting": "Enviando...",
+      "edit": "Editar"
+    },
+    "personalInfo": {
+      "title": "Informações pessoais",
+      "subtitle": "Preencha seus dados pessoais",
+      "fullName": "Nome completo",
+      "fullNamePlaceholder": "Digite seu nome completo",
+      "email": "E-mail",
+      "emailPlaceholder": "seu@email.com",
+      "phone": "Telefone",
+      "phonePlaceholder": "+55 11 99999-9999",
+      "dateOfBirth": "Data de nascimento",
+      "country": "País de residência",
+      "countryPlaceholder": "Selecione seu país"
+    },
+    "address": {
+      "title": "Verificação de endereço",
+      "subtitle": "Informe seu endereço atual",
+      "street": "Logradouro",
+      "streetPlaceholder": "Rua, Av., número, complemento",
+      "city": "Cidade",
+      "cityPlaceholder": "Sua cidade",
+      "state": "Estado",
+      "statePlaceholder": "Selecione um estado",
+      "postalCode": "CEP",
+      "postalCodePlaceholder": "00000-000",
+      "proofDocument": "Comprovante de endereço",
+      "proofDocumentHint": "Conta de luz, água ou cartão bancário. PDF, JPG ou PNG, máx. 5MB."
+    },
+    "identity": {
+      "title": "Verificação de identidade",
+      "subtitle": "Escolha e envie seu documento de identidade",
+      "idType": "Tipo de documento",
+      "idTypePlaceholder": "Selecione o tipo",
+      "passport": "Passaporte",
+      "driversLicense": "CNH",
+      "rg": "RG",
+      "idNumber": "Número do documento / CPF",
+      "idNumberPlaceholder": "000.000.000-00",
+      "frontImage": "Frente do documento",
+      "frontImageHint": "Foto clara da frente do documento",
+      "backImage": "Verso do documento",
+      "backImageHint": "Foto clara do verso do documento"
+    },
+    "selfie": {
+      "title": "Selfie ao vivo",
+      "subtitle": "Tire uma selfie para confirmar sua identidade",
+      "instructions": "Posicione seu rosto no centro, em local bem iluminado, sem óculos ou chapéu.",
+      "capture": "Tirar foto",
+      "retake": "Tirar novamente",
+      "permissionDenied": "Permissão de câmera negada. Habilite o acesso à câmera nas configurações do navegador.",
+      "cameraNotAvailable": "Câmera não disponível neste dispositivo."
+    },
+    "review": {
+      "title": "Revisão e envio",
+      "subtitle": "Verifique suas informações antes de enviar",
+      "personalInfo": "Informações pessoais",
+      "address": "Endereço",
+      "identity": "Identidade",
+      "selfie": "Selfie",
+      "selfieProvided": "Selfie capturada",
+      "documentUploaded": "Documento enviado",
+      "terms": "Li e aceito os termos e condições de verificação de identidade",
+      "termsRequired": "Você deve aceitar os termos para continuar"
+    },
+    "validation": {
+      "required": "Campo obrigatório",
+      "emailInvalid": "E-mail inválido",
+      "phoneInvalid": "Número de telefone inválido. Use o formato internacional: +55 11 99999-9999",
+      "dateOfBirthMinAge": "Você deve ter pelo menos 18 anos",
+      "dateOfBirthInvalid": "Data inválida",
+      "cpfInvalid": "CPF inválido",
+      "fileTooLarge": "Arquivo muito grande. Tamanho máximo: 5MB",
+      "fileTypeInvalid": "Tipo de arquivo inválido. Use PDF, JPG ou PNG",
+      "selfieRequired": "Capture uma selfie para continuar"
+    },
+    "status": {
+      "pendingSubmission": "Verificação pendente",
+      "underReview": "Em análise",
+      "approved": "Verificado",
+      "rejected": "Reprovado"
+    },
+    "banner": {
+      "title": "Conta não verificada",
+      "description": "Conclua a verificação de identidade para ter acesso completo.",
+      "action": "Verificar agora"
+    },
+    "success": {
+      "title": "Documentos enviados com sucesso!",
+      "description": "Sua verificação está em análise. Você será notificado em breve."
+    },
+    "error": {
+      "submit": "Erro ao enviar verificação. Tente novamente.",
+      "generic": "Algo deu errado. Tente novamente."
+    },
+    "draft": {
+      "restored": "Rascunho restaurado"
+    }
+  },
+  "common": {
+    "loading": "Carregando...",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Salvar",
+    "close": "Fechar"
+  }
+}

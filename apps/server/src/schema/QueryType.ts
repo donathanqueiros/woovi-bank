@@ -18,6 +18,8 @@ import { DepositRequest } from "../modules/deposits/DepositRequestModel";
 import { TransactionType } from "../modules/transactions/TransactionType";
 import { Transaction } from "../modules/transactions/TransactionModel";
 import { User } from "../modules/users/UserModel";
+import { Kyc } from "../modules/kyc/KycModel";
+import { KycType, KycStatusEnum } from "../modules/kyc/KycType";
 import type { GraphQLContext } from "../types/auth";
 
 const DEFAULT_PAGE = 1;
@@ -58,6 +60,14 @@ const MeType = new GraphQLObjectType({
       resolve: async (user) => {
         const account = await Account.findOne({ userId: user.id });
         return account?.id ?? null;
+      },
+    },
+    kycStatus: {
+      type: new GraphQLNonNull(KycStatusEnum),
+      resolve: async (user) => {
+        if (user.role === "ADMIN") return "APPROVED";
+        const kyc = await Kyc.findOne({ userId: user.id });
+        return kyc?.status ?? "PENDING_SUBMISSION";
       },
     },
   },
@@ -245,6 +255,18 @@ export const QueryType = new GraphQLObjectType({
           accountId: account.id,
           ...(args.status ? { status: args.status } : {}),
         });
+      },
+    },
+
+    myKyc: {
+      type: KycType,
+      resolve: async (
+        _source: unknown,
+        _args: unknown,
+        context: GraphQLContext,
+      ) => {
+        if (!context.auth?.userId) return null;
+        return await Kyc.findOne({ userId: context.auth.userId });
       },
     },
   },

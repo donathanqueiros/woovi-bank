@@ -8,6 +8,7 @@ type Query {
   transactionsCount(accountId: ID): Int!
   myDeposits(page: Int, limit: Int, status: DepositRequestStatus): [DepositRequest!]!
   myDepositsCount(status: DepositRequestStatus): Int!
+  myKyc: Kyc
 }
 
 type Me {
@@ -16,6 +17,7 @@ type Me {
   role: QueryUserRole!
   active: Boolean!
   accountId: ID
+  kycStatus: KycStatus!
 }
 
 enum QueryUserRole {
@@ -71,6 +73,24 @@ type Mutation {
   Login(email: String!, password: String!): AuthPayload!
   Logout: Boolean!
   SignUp(email: String!, password: String!): AuthPayload!
+  SubmitKyc(
+    fullName: String!
+    email: String!
+    phone: String!
+    dateOfBirth: String!
+    country: String!
+    street: String!
+    city: String!
+    state: String!
+    postalCode: String!
+    proofDocumentBase64: String
+    proofDocumentMimeType: String
+    idType: String!
+    idNumber: String!
+    frontImageBase64: String!
+    backImageBase64: String
+    selfieBase64: String!
+  ): Kyc!
 }
 
 type AuthPayload {
@@ -113,4 +133,47 @@ type TransferReceived {
   amount: Float!
   description: String
   createdAt: String!
+}
+
+enum KycStatus {
+  PENDING_SUBMISSION
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum KycIdType {
+  PASSPORT
+  DRIVERS_LICENSE
+  RG
+}
+
+type KycPersonalInfo {
+  fullName: String
+  email: String
+  phone: String
+  dateOfBirth: String
+  country: String
+}
+
+type KycAddress {
+  street: String
+  city: String
+  state: String
+  postalCode: String
+}
+
+type KycIdentity {
+  idType: KycIdType
+  idNumber: String
+}
+
+type Kyc {
+  id: ID!
+  status: KycStatus!
+  personalInfo: KycPersonalInfo
+  address: KycAddress
+  identity: KycIdentity
+  submittedAt: String
+  reviewNotes: String
 }

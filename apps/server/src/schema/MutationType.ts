@@ -3,6 +3,7 @@ import { accountMutations } from "../modules/accounts/mutations/accountMutationt
 import { depositMutations } from "../modules/deposits/mutations/depositMutations";
 import { transactionMutations } from "../modules/transactions/mutations/transactionMutations";
 import { userMutations } from "../modules/users/mutations/userMutations";
+import { kycMutations } from "../modules/kyc/mutations/kycMutations";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
@@ -11,5 +12,6 @@ export const MutationType = new GraphQLObjectType({
     ...depositMutations,
     ...transactionMutations,
     ...userMutations,
+    ...kycMutations,
   }),
 });

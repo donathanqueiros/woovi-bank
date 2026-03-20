@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
+import type { ComponentProps } from "react"
 
 import { Button } from "./button"
 
@@ -29,7 +30,7 @@ type Story = StoryObj<typeof meta>
 export const Playground: Story = {}
 
 export const Variants: Story = {
-  render: (args) => (
+  render: (args: ComponentProps<typeof Button>) => (
     <div className="flex flex-wrap items-center gap-3">
       <Button {...args} variant="default">Default</Button>
       <Button {...args} variant="outline">Outline</Button>
@@ -42,7 +43,7 @@ export const Variants: Story = {
 }
 
 export const Sizes: Story = {
-  render: (args) => (
+  render: (args: ComponentProps<typeof Button>) => (
     <div className="flex flex-wrap items-center gap-3">
       <Button {...args} size="xs">XS</Button>
       <Button {...args} size="sm">SM</Button>

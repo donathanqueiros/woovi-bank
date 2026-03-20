@@ -17,6 +17,7 @@ const ME_QUERY = `
       email
       role
       accountId
+      kycStatus
     }
   }
 `;
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: string;
           role: "USER" | "ADMIN";
           accountId: string | null;
+          kycStatus: string;
         } | null;
       }>(ME_QUERY, {})
         .then((data) => {
@@ -52,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: data.me.email,
             role: data.me.role,
             accountId: data.me.accountId,
+            kycStatus: (data.me.kycStatus as import("@/lib/auth-storage").KycStatus) ?? "PENDING_SUBMISSION",
           });
         })
         .catch(() => {
