@@ -10,7 +10,7 @@ import AccountsListPage from "./pages/accounts-list.tsx";
 import DepositPage from "./pages/deposit.tsx";
 import HomePage from "./pages/home.tsx";
 import TransactionsPage from "./pages/transactions.tsx";
-import TransferPage from "./pages/transfer.tsx";
+import TransferPage from "./pages/transfer/transfer.tsx";
 import ProfilePage from "./pages/profile.tsx";
 import AdminPage from "./pages/admin.tsx";
 import SettingsPage from "./pages/settings.tsx";
