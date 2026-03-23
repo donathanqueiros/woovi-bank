@@ -225,36 +225,42 @@ export function DashboardLayout() {
       </Sidebar>
 
       <SidebarInset className="min-h-svh">
-        <header className="sticky top-0 z-20 flex min-h-20 shrink-0 items-center gap-3 border-b border-border/70 bg-background/80 px-4 backdrop-blur md:px-6">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-1 hidden h-5 md:block" />
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.24em] text-primary">
-              {pageMeta.title}
-            </p>
-            <p className="truncate text-sm text-muted-foreground">
-              {pageMeta.description}
-            </p>
+        <header className="sticky top-0 z-20 border-b border-border/70 bg-background/84 px-3 py-3 backdrop-blur md:px-6 md:py-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex min-w-0 items-start gap-2 md:items-center md:gap-3">
+              <SidebarTrigger className="-ml-1 shrink-0" />
+              <Separator orientation="vertical" className="mr-1 hidden h-5 md:block" />
+              <div className="min-w-0">
+                <p className="text-[0.68rem] uppercase tracking-[0.24em] text-primary sm:text-xs">
+                  {pageMeta.title}
+                </p>
+                <p className="line-clamp-2 text-xs leading-5 text-muted-foreground sm:text-sm md:truncate">
+                  {pageMeta.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 md:ml-auto">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label={
+                  mode === "dark"
+                    ? t("dashboard.actions.enableLight")
+                    : t("dashboard.actions.enableDark")
+                }
+                onClick={toggleMode}
+              >
+                {mode === "dark" ? <SunMedium className="size-4" /> : <MoonStar className="size-4" />}
+              </Button>
+              <Button size="sm" className="min-w-0 flex-1 md:flex-none" onClick={() => navigate("/transfer")}>
+                <span className="truncate">{t("dashboard.actions.transfer")}</span>
+              </Button>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="ml-auto"
-            aria-label={
-              mode === "dark"
-                ? t("dashboard.actions.enableLight")
-                : t("dashboard.actions.enableDark")
-            }
-            onClick={toggleMode}
-          >
-            {mode === "dark" ? <SunMedium className="size-4" /> : <MoonStar className="size-4" />}
-          </Button>
-          <Button size="sm" onClick={() => navigate("/transfer")}>
-            {t("dashboard.actions.transfer")}
-          </Button>
         </header>
 
-        <div className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        <div className="flex-1 px-3 py-5 sm:px-6 sm:py-8">
           <Outlet />
         </div>
       </SidebarInset>
