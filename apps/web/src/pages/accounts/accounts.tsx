@@ -15,11 +15,7 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
-import {
-  fetchQuery,
-  graphql,
-  useRelayEnvironment,
-} from "react-relay";
+import { fetchQuery, graphql, useRelayEnvironment } from "react-relay";
 import { toast } from "sonner";
 import {
   ACCOUNT_DEPOSIT_CONFIRMED_EVENT,
@@ -34,7 +30,7 @@ import { getTransferValidationMessage } from "@/lib/transfer-validation";
 import { cn } from "@/lib/utils";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
-import type { accountsQuery } from "../__generated__/accountsQuery.graphql";
+import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
 
 const PAGE_SIZE = 10;
 
@@ -252,7 +248,9 @@ export default function AccountsPage() {
   const relayEnvironment = useRelayEnvironment();
   const { user, logout } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [transactions, setTransactions] = useState<TransactionsPayload["transactions"]>([]);
+  const [transactions, setTransactions] = useState<
+    TransactionsPayload["transactions"]
+  >([]);
   const [search, setSearch] = useState("");
   const [accountsPage, setAccountsPage] = useState(1);
   const [transactionsPage, setTransactionsPage] = useState(1);
@@ -267,7 +265,9 @@ export default function AccountsPage() {
   const [transferDescription, setTransferDescription] = useState("");
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferFeedback, setTransferFeedback] = useState<string | null>(null);
-  const [transferFeedbackTone, setTransferFeedbackTone] = useState<"error" | "success">("success");
+  const [transferFeedbackTone, setTransferFeedbackTone] = useState<
+    "error" | "success"
+  >("success");
   const [depositAmount, setDepositAmount] = useState("100");
   const [depositLoading, setDepositLoading] = useState(false);
   const [depositFeedback, setDepositFeedback] = useState<string | null>(null);
@@ -289,7 +289,9 @@ export default function AccountsPage() {
     () =>
       deposits
         .slice()
-        .sort((a, b) => parseDateValue(b.createdAt) - parseDateValue(a.createdAt))[0] ?? null,
+        .sort(
+          (a, b) => parseDateValue(b.createdAt) - parseDateValue(a.createdAt),
+        )[0] ?? null,
     [deposits],
   );
   const selectedDeleteUser = useMemo(
@@ -403,7 +405,13 @@ export default function AccountsPage() {
     } finally {
       setLoading(false);
     }
-  }, [accountsPage, relayEnvironment, transactionsPage, user?.accountId, user?.role]);
+  }, [
+    accountsPage,
+    relayEnvironment,
+    transactionsPage,
+    user?.accountId,
+    user?.role,
+  ]);
 
   useEffect(() => {
     void loadDashboardData();
@@ -418,12 +426,24 @@ export default function AccountsPage() {
       void loadDashboardData();
     };
 
-    window.addEventListener(ACCOUNT_TRANSFER_RECEIVED_EVENT, handleRealtimeUpdate);
-    window.addEventListener(ACCOUNT_DEPOSIT_CONFIRMED_EVENT, handleRealtimeUpdate);
+    window.addEventListener(
+      ACCOUNT_TRANSFER_RECEIVED_EVENT,
+      handleRealtimeUpdate,
+    );
+    window.addEventListener(
+      ACCOUNT_DEPOSIT_CONFIRMED_EVENT,
+      handleRealtimeUpdate,
+    );
 
     return () => {
-      window.removeEventListener(ACCOUNT_TRANSFER_RECEIVED_EVENT, handleRealtimeUpdate);
-      window.removeEventListener(ACCOUNT_DEPOSIT_CONFIRMED_EVENT, handleRealtimeUpdate);
+      window.removeEventListener(
+        ACCOUNT_TRANSFER_RECEIVED_EVENT,
+        handleRealtimeUpdate,
+      );
+      window.removeEventListener(
+        ACCOUNT_DEPOSIT_CONFIRMED_EVENT,
+        handleRealtimeUpdate,
+      );
     };
   }, [loadDashboardData, user?.accountId]);
 
@@ -474,8 +494,7 @@ export default function AccountsPage() {
   const accountTransactions = useMemo(
     () =>
       [...transactions].sort(
-        (a, b) =>
-          parseDateValue(b.createdAt) - parseDateValue(a.createdAt),
+        (a, b) => parseDateValue(b.createdAt) - parseDateValue(a.createdAt),
       ),
     [transactions],
   );
@@ -540,7 +559,9 @@ export default function AccountsPage() {
       await loadDashboardData();
     } catch (err: unknown) {
       setTransferFeedbackTone("error");
-      setTransferFeedback(err instanceof Error ? err.message : "Falha na transferencia");
+      setTransferFeedback(
+        err instanceof Error ? err.message : "Falha na transferencia",
+      );
     } finally {
       setTransferLoading(false);
     }
@@ -558,14 +579,19 @@ export default function AccountsPage() {
     setDepositFeedback(null);
 
     try {
-      await graphqlRequest<{ CreateDeposit: Deposit }>(CREATE_DEPOSIT_MUTATION, {
-        amount,
-      });
+      await graphqlRequest<{ CreateDeposit: Deposit }>(
+        CREATE_DEPOSIT_MUTATION,
+        {
+          amount,
+        },
+      );
 
       setDepositFeedback("Deposito Pix gerado com sucesso.");
       await loadDashboardData();
     } catch (err: unknown) {
-      setDepositFeedback(err instanceof Error ? err.message : "Falha ao gerar deposito");
+      setDepositFeedback(
+        err instanceof Error ? err.message : "Falha ao gerar deposito",
+      );
     } finally {
       setDepositLoading(false);
     }
@@ -594,7 +620,9 @@ export default function AccountsPage() {
       setAdminFeedback("Credito adicionado com sucesso.");
       await loadDashboardData();
     } catch (err: unknown) {
-      setAdminFeedback(err instanceof Error ? err.message : "Falha ao adicionar credito");
+      setAdminFeedback(
+        err instanceof Error ? err.message : "Falha ao adicionar credito",
+      );
     } finally {
       setAdminLoading(false);
     }
@@ -611,7 +639,11 @@ export default function AccountsPage() {
       return;
     }
 
-    if (!window.confirm(`Confirma a exclusao do usuario ${selectedDeleteUser.email}?`)) {
+    if (
+      !window.confirm(
+        `Confirma a exclusao do usuario ${selectedDeleteUser.email}?`,
+      )
+    ) {
       return;
     }
 
@@ -624,7 +656,9 @@ export default function AccountsPage() {
       setDeleteUserId("");
       await loadDashboardData();
     } catch (err: unknown) {
-      setAdminFeedback(err instanceof Error ? err.message : "Falha ao excluir usuario");
+      setAdminFeedback(
+        err instanceof Error ? err.message : "Falha ao excluir usuario",
+      );
     } finally {
       setAdminLoading(false);
     }
@@ -658,8 +692,12 @@ export default function AccountsPage() {
           >
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-amber-700">painel</p>
-                <h1 className="text-3xl font-semibold tracking-tight">Contas e transferencias</h1>
+                <p className="text-xs uppercase tracking-[0.2em] text-amber-700">
+                  painel
+                </p>
+                <h1 className="text-3xl font-semibold tracking-tight">
+                  Contas e transferencias
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Usuario: {user?.email} ({user?.role})
                 </p>
@@ -678,12 +716,15 @@ export default function AccountsPage() {
               <div>
                 <h2 className="text-sm font-semibold">Transferir dinheiro</h2>
                 <p className="text-xs text-slate-600">
-                  Envio entre contas com destino informado sem expor listagens amplas.
+                  Envio entre contas com destino informado sem expor listagens
+                  amplas.
                 </p>
               </div>
               <div className="text-right text-sm">
                 <p className="text-slate-500">Saldo da sua conta</p>
-                <p className="font-semibold">{formatBalance(myAccount?.balance ?? 0)}</p>
+                <p className="font-semibold">
+                  {formatBalance(myAccount?.balance ?? 0)}
+                </p>
               </div>
             </div>
 
@@ -735,7 +776,9 @@ export default function AccountsPage() {
                   }}
                 />
                 {transferAmountError ? (
-                  <p className="mt-1 text-xs text-destructive">{transferAmountError}</p>
+                  <p className="mt-1 text-xs text-destructive">
+                    {transferAmountError}
+                  </p>
                 ) : null}
               </label>
 
@@ -744,7 +787,9 @@ export default function AccountsPage() {
                 <input
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                   value={transferDescription}
-                  onChange={(event) => setTransferDescription(event.target.value)}
+                  onChange={(event) =>
+                    setTransferDescription(event.target.value)
+                  }
                 />
               </label>
             </div>
@@ -753,7 +798,9 @@ export default function AccountsPage() {
               <Button
                 onClick={() => void handleTransfer()}
                 disabled={
-                  transferLoading || !hasSelectedDestination || Boolean(transferAmountError)
+                  transferLoading ||
+                  !hasSelectedDestination ||
+                  Boolean(transferAmountError)
                 }
               >
                 <SendHorizontal className="mr-2 h-4 w-4" />
@@ -763,7 +810,9 @@ export default function AccountsPage() {
                 <p
                   className={cn(
                     "text-sm",
-                    transferFeedbackTone === "error" ? "text-destructive" : "text-emerald-700",
+                    transferFeedbackTone === "error"
+                      ? "text-destructive"
+                      : "text-emerald-700",
                   )}
                 >
                   {transferFeedback}
@@ -783,7 +832,9 @@ export default function AccountsPage() {
                   Gere um QR Code e acompanhe as confirmacoes em tempo real.
                 </p>
               </div>
-              <p className="text-xs text-slate-600">Total historico: {depositsTotalCount}</p>
+              <p className="text-xs text-slate-600">
+                Total historico: {depositsTotalCount}
+              </p>
             </div>
 
             <div className="grid gap-3 md:grid-cols-[1fr_auto]">
@@ -799,13 +850,18 @@ export default function AccountsPage() {
                 />
               </label>
               <div className="self-end">
-                <Button onClick={() => void handleCreateDeposit()} disabled={depositLoading}>
+                <Button
+                  onClick={() => void handleCreateDeposit()}
+                  disabled={depositLoading}
+                >
                   {depositLoading ? "Gerando..." : "Gerar deposito Pix"}
                 </Button>
               </div>
             </div>
 
-            {depositFeedback ? <p className="text-sm text-slate-700">{depositFeedback}</p> : null}
+            {depositFeedback ? (
+              <p className="text-sm text-slate-700">{depositFeedback}</p>
+            ) : null}
 
             {latestDeposit ? (
               <div className="grid gap-4 rounded-xl border border-emerald-200 bg-white p-4 md:grid-cols-2">
@@ -822,11 +878,15 @@ export default function AccountsPage() {
                     </p>
                   </div>
                   <p className="text-sm">
-                    Valor solicitado: <strong>{formatBalance(latestDeposit.requestedAmount)}</strong>
+                    Valor solicitado:{" "}
+                    <strong>
+                      {formatBalance(latestDeposit.requestedAmount)}
+                    </strong>
                   </p>
                   {latestDeposit.paidAmount ? (
                     <p className="text-sm text-emerald-700">
-                      Valor confirmado: <strong>{formatBalance(latestDeposit.paidAmount)}</strong>
+                      Valor confirmado:{" "}
+                      <strong>{formatBalance(latestDeposit.paidAmount)}</strong>
                     </p>
                   ) : null}
                   {latestDeposit.brCode ? (
@@ -840,7 +900,9 @@ export default function AccountsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => void handleCopyBrCode(latestDeposit.brCode ?? "")}
+                        onClick={() =>
+                          void handleCopyBrCode(latestDeposit.brCode ?? "")
+                        }
                       >
                         <Copy className="mr-2 h-4 w-4" />
                         Copiar codigo Pix
@@ -878,13 +940,16 @@ export default function AccountsPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-medium">
-                          {formatBalance(deposit.requestedAmount)} • {getDepositStatusLabel(deposit.status)}
+                          {formatBalance(deposit.requestedAmount)} •{" "}
+                          {getDepositStatusLabel(deposit.status)}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
                           CorrelationID: {deposit.correlationID}
                         </p>
                       </div>
-                      <p className="text-xs text-slate-500">{formatDateTime(deposit.createdAt)}</p>
+                      <p className="text-xs text-slate-500">
+                        {formatDateTime(deposit.createdAt)}
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -927,7 +992,10 @@ export default function AccountsPage() {
                 </label>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => void handleAddCredit()} disabled={adminLoading}>
+                <Button
+                  onClick={() => void handleAddCredit()}
+                  disabled={adminLoading}
+                >
                   Adicionar credito
                 </Button>
               </div>
@@ -962,14 +1030,19 @@ export default function AccountsPage() {
               <div className="rounded-xl border border-rose-200 bg-white/80 px-3 py-3 text-sm text-slate-700">
                 {selectedDeleteUser ? (
                   <p>
-                    E-mail selecionado: <strong>{selectedDeleteUser.email}</strong>
+                    E-mail selecionado:{" "}
+                    <strong>{selectedDeleteUser.email}</strong>
                   </p>
                 ) : (
-                  <p className="text-slate-500">Selecione um usuario para confirmar a exclusao.</p>
+                  <p className="text-slate-500">
+                    Selecione um usuario para confirmar a exclusao.
+                  </p>
                 )}
               </div>
 
-              {adminFeedback ? <p className="text-sm">{adminFeedback}</p> : null}
+              {adminFeedback ? (
+                <p className="text-sm">{adminFeedback}</p>
+              ) : null}
             </section>
           ) : null}
 
@@ -979,7 +1052,9 @@ export default function AccountsPage() {
           >
             <div>
               <h2 className="text-base font-semibold">Transacoes recentes</h2>
-              <p className="text-sm text-muted-foreground">Movimentacoes de entrada e saida da sua conta.</p>
+              <p className="text-sm text-muted-foreground">
+                Movimentacoes de entrada e saida da sua conta.
+              </p>
             </div>
 
             {!loading && accountTransactions.length === 0 ? (
@@ -991,7 +1066,8 @@ export default function AccountsPage() {
             {!loading && accountTransactions.length > 0 ? (
               <ul className="space-y-2">
                 {accountTransactions.map((transaction) => {
-                  const outgoing = transaction.fromAccount.id === user?.accountId;
+                  const outgoing =
+                    transaction.fromAccount.id === user?.accountId;
                   const counterpart = outgoing
                     ? transaction.toAccount.holderName
                     : transaction.fromAccount.holderName;
@@ -1019,9 +1095,13 @@ export default function AccountsPage() {
                           </div>
                           <div>
                             <p className="text-sm font-medium leading-none">
-                              {outgoing ? "Transferencia enviada" : "Transferencia recebida"}
+                              {outgoing
+                                ? "Transferencia enviada"
+                                : "Transferencia recebida"}
                             </p>
-                            <p className="mt-1 text-xs text-muted-foreground">Conta: {counterpart}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Conta: {counterpart}
+                            </p>
                           </div>
                         </div>
 
@@ -1042,7 +1122,9 @@ export default function AccountsPage() {
                       </div>
 
                       {transaction.description ? (
-                        <p className="mt-2 text-xs text-slate-600">{transaction.description}</p>
+                        <p className="mt-2 text-xs text-slate-600">
+                          {transaction.description}
+                        </p>
                       ) : null}
                     </li>
                   );
@@ -1059,14 +1141,18 @@ export default function AccountsPage() {
                   variant="outline"
                   size="sm"
                   disabled={transactionsPage === 1 || loading}
-                  onClick={() => setTransactionsPage((page) => Math.max(1, page - 1))}
+                  onClick={() =>
+                    setTransactionsPage((page) => Math.max(1, page - 1))
+                  }
                 >
                   Anterior
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={transactionsPage >= transactionsTotalPages || loading}
+                  disabled={
+                    transactionsPage >= transactionsTotalPages || loading
+                  }
                   onClick={() => setTransactionsPage((page) => page + 1)}
                 >
                   Proxima
@@ -1125,8 +1211,12 @@ export default function AccountsPage() {
                           <User className="size-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium leading-none">{account.holderName}</p>
-                          <p className="mt-1 font-mono text-xs text-muted-foreground">{account.id}</p>
+                          <p className="text-sm font-medium leading-none">
+                            {account.holderName}
+                          </p>
+                          <p className="mt-1 font-mono text-xs text-muted-foreground">
+                            {account.id}
+                          </p>
                         </div>
                       </div>
 
@@ -1170,7 +1260,9 @@ export default function AccountsPage() {
                   variant="outline"
                   size="sm"
                   disabled={accountsPage === 1 || loading}
-                  onClick={() => setAccountsPage((page) => Math.max(1, page - 1))}
+                  onClick={() =>
+                    setAccountsPage((page) => Math.max(1, page - 1))
+                  }
                 >
                   Anterior
                 </Button>
