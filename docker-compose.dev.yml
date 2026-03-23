@@ -1,10 +1,12 @@
 services:
-  mongo1:
+  mongodb:
     image: mongo:7
-    container_name: mongo1
-    command: ["mongod", "--replSet", "myReplicaSet", "--bind_ip_all", "--port", "27017"]
+    container_name: mongodb
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=bank
     healthcheck:
       test:
         [
@@ -12,41 +14,18 @@ services:
           "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://127.0.0.1:27017/admin | grep 1",
         ]
       interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 30s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
     volumes:
-      - mongo1_data:/data/db
-
-  mongo2:
-    image: mongo:7
-    container_name: mongo2
-    command: ["mongod", "--replSet", "myReplicaSet", "--bind_ip_all", "--port", "27017"]
-    depends_on:
-      mongo1:
-        condition: service_healthy
-    ports:
-      - "27018:27017"
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "echo 'db.adminCommand({ ping: 1 }).ok' | mongosh --quiet mongodb://127.0.0.1:27017/admin | grep 1",
-        ]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 30s
-    volumes:
-      - mongo2_data:/data/db
+      - mongodb_data:/data/db
+    restart: always
 
   mongodb-rs-init:
     image: mongo:7
     container_name: mongodb-rs-init
     depends_on:
-      mongo1:
-        condition: service_healthy
-      mongo2:
+      mongodb:
         condition: service_healthy
     restart: "no"
     entrypoint:
@@ -54,22 +33,17 @@ services:
       - -lc
       - |
         echo "Waiting for MongoDB replica set init..."
-        mongosh --quiet mongodb://mongo1:27017/admin --eval '
+        mongosh --quiet mongodb://localhost:27017/admin --eval '
           try {
             rs.status();
             print("Replica set already initialized");
           } catch (error) {
             rs.initiate({
-              _id: "myReplicaSet",
-              members: [
-                { _id: 0, host: "mongo1" },
-                { _id: 1, host: "mongo2" }
-              ]
+              _id: "rs0",
+              members: [{ _id: 0, host: "localhost:27017" }]
             });
             print("Replica set initialized");
           }
         '
-
 volumes:
-  mongo1_data:
-  mongo2_data:
+  mongodb_data:

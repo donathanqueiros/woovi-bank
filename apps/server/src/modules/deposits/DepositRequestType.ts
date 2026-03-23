@@ -13,6 +13,7 @@ export const DepositRequestStatusType = new GraphQLEnumType({
     PENDING: { value: "PENDING" },
     COMPLETED: { value: "COMPLETED" },
     EXPIRED: { value: "EXPIRED" },
+    CANCELED: { value: "CANCELED" },
   },
 });
 

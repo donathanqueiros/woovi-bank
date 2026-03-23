@@ -113,75 +113,11 @@ export default function AuthPage() {
 
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10">
-      <section className="mx-auto grid max-w-6xl overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_34px_70px_-48px_color-mix(in_oklab,var(--foreground)_18%,transparent)] lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="flex flex-col justify-between gap-8 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--secondary)_82%,white),transparent)] px-6 py-8 sm:px-8 sm:py-10">
-          <div className="space-y-5">
-            <Badge variant="secondary" className="rounded-full px-3 py-1">
-              Banking operations
-            </Badge>
-            <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.32em] text-primary">
-                Subli Bank
-              </p>
-              <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-foreground">
-                Uma experiencia mais clara para operar contas, saldo e historico.
-              </h1>
-              <p className="max-w-lg text-base leading-7 text-muted-foreground">
-                O novo visual reduz ruído, melhora foco nas acoes e reforca a
-                sensacao de confianca em cada etapa do fluxo.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            <article className="rounded-[22px] border border-border/70 bg-card/80 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Wallet className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Saldo e operacao em destaque</p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    Acao principal, leitura de conta e proximos passos ficam visiveis logo de cara.
-                  </p>
-                </div>
-              </div>
-            </article>
-            <article className="rounded-[22px] border border-border/70 bg-card/80 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground">
-                  <ShieldCheck className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Confianca operacional</p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    Interface pensada para times que precisam agir rapido sem perder contexto.
-                  </p>
-                </div>
-              </div>
-            </article>
-            <article className="rounded-[22px] border border-border/70 bg-card/80 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Sparkles className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Visual configuravel</p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    Tres paletas globais para adequar a experiencia ao estilo da operacao.
-                  </p>
-                </div>
-              </div>
-            </article>
-          </div>
-        </div>
-
-        <div className="px-6 py-8 sm:px-8 sm:py-10">
+      <section className="mx-auto grid max-w-6xl overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_34px_70px_-48px_color-mix(in_oklab,var(--foreground)_18%,transparent)] lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="order-1 px-6 py-8 sm:px-8 sm:py-10">
           <div className="mx-auto max-w-md">
             <header className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.24em] text-primary">
-                Acesso
-              </p>
+              <p className="text-xs uppercase tracking-[0.24em] text-primary">Acesso</p>
               <h2 className="text-3xl font-semibold tracking-[-0.04em]">
                 {mode === "login" ? "Entrar na conta" : "Criar nova conta"}
               </h2>
@@ -246,14 +182,70 @@ export default function AuthPage() {
               ) : null}
 
               <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                {loading
-                  ? "Processando..."
-                  : mode === "login"
-                    ? "Entrar"
-                    : "Criar conta"}
+                {loading ? "Processando..." : mode === "login" ? "Entrar" : "Criar conta"}
                 {!loading ? <ArrowRight className="ml-2 size-4" /> : null}
               </Button>
             </form>
+          </div>
+        </div>
+
+        <div className="order-2 flex flex-col justify-between gap-8 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--secondary)_82%,white),transparent)] px-6 py-8 sm:px-8 sm:py-10">
+          <div className="space-y-5">
+            <Badge variant="secondary" className="rounded-full px-3 py-1">
+              Banking operations
+            </Badge>
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.32em] text-primary">Subli Bank</p>
+              <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-foreground">
+                Uma experiencia mais clara para operar contas, saldo e historico.
+              </h1>
+              <p className="max-w-lg text-base leading-7 text-muted-foreground">
+                O novo visual reduz ruido, melhora foco nas acoes e reforca a sensacao de
+                confianca em cada etapa do fluxo.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <article className="rounded-[22px] border border-border/70 bg-card/80 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Wallet className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Saldo e operacao em destaque</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Acao principal, leitura de conta e proximos passos ficam visiveis logo de cara.
+                  </p>
+                </div>
+              </div>
+            </article>
+            <article className="rounded-[22px] border border-border/70 bg-card/80 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground">
+                  <ShieldCheck className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Confianca operacional</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Interface pensada para times que precisam agir rapido sem perder contexto.
+                  </p>
+                </div>
+              </div>
+            </article>
+            <article className="rounded-[22px] border border-border/70 bg-card/80 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Sparkles className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Visual configuravel</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Tres paletas globais para adequar a experiencia ao estilo da operacao.
+                  </p>
+                </div>
+              </div>
+            </article>
           </div>
         </div>
       </section>

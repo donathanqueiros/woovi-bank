@@ -255,7 +255,10 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <Button className="mt-5" variant="outline" onClick={() => navigate("/deposit")}>
+            <Button
+              className="mt-5 border-cyan-200 bg-cyan-500 text-white shadow-[0_18px_36px_-22px_color-mix(in_oklab,#06b6d4_55%,transparent)] hover:border-cyan-300 hover:bg-cyan-400 hover:text-white"
+              onClick={() => navigate("/deposit")}
+            >
               Abrir deposito Pix
             </Button>
           </article>

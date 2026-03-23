@@ -82,6 +82,7 @@ enum DepositRequestStatus {
   PENDING
   COMPLETED
   EXPIRED
+  CANCELED
 }
 
 type Kyc {
@@ -124,7 +125,8 @@ type Mutation {
   AddCredit(accountId: String!, amount: Float!, idempotencyKey: String!): Account!
   CreateAccount(holderName: String!): Account!
   DeleteUser(userId: String!): Boolean!
-  CreateDeposit(amount: Float!, comment: String): DepositRequest!
+  CreateDeposit(amount: Float!, comment: String, expiresDate: String): DepositRequest!
+  CancelLatestDeposit: DepositRequest!
   Transfer(fromAccountId: String!, toAccountId: String!, amount: Float!, idempotencyKey: String!, description: String): Transaction!
   Login(email: String!, password: String!): AuthPayload!
   Logout: Boolean!

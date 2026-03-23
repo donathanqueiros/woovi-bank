@@ -195,6 +195,31 @@ describe("wooviWebhookService", () => {
     expect(DepositNotificationBus.publishDepositConfirmed).not.toHaveBeenCalled();
   });
 
+  it("ignora confirmacao quando o deposito ja foi cancelado", async () => {
+    DepositRequestModel.findOne.mockResolvedValue({
+      id: "deposit-1",
+      accountId: "account-user-1",
+      correlationID: "corr-1",
+      status: "CANCELED",
+      expiredAt: new Date("2026-03-19T10:05:00.000Z"),
+    });
+
+    const result = await handleWooviChargeCompletedEvent({
+      event: "OPENPIX:CHARGE_COMPLETED",
+      charge: {
+        correlationID: "corr-1",
+      },
+      pix: {
+        value: "150",
+      },
+    } as never);
+
+    expect(result).toBe("already-closed");
+    expect(TransactionModel).not.toHaveBeenCalled();
+    expect(LedgerEntryModel).not.toHaveBeenCalled();
+    expect(DepositNotificationBus.publishDepositConfirmed).not.toHaveBeenCalled();
+  });
+
   it("marca deposito como expirado sem credito", async () => {
     DepositRequestModel.findOne.mockResolvedValue({
       id: "deposit-1",

@@ -70,7 +70,7 @@ type TransactionsPayload = {
   }>;
 };
 
-type DepositStatus = "PENDING" | "COMPLETED" | "EXPIRED";
+type DepositStatus = "PENDING" | "COMPLETED" | "EXPIRED" | "CANCELED";
 
 type Deposit = {
   id: string;
@@ -244,6 +244,7 @@ function newIdempotencyKey() {
 function getDepositStatusLabel(status: DepositStatus) {
   if (status === "COMPLETED") return "Confirmado";
   if (status === "EXPIRED") return "Expirado";
+  if (status === "CANCELED") return "Cancelado";
   return "Aguardando pagamento";
 }
 

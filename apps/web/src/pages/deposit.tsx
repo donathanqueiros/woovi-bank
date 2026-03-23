@@ -8,6 +8,10 @@ import { ACCOUNT_DEPOSIT_CONFIRMED_EVENT } from "@/lib/account-notification-even
 import { formatBalance, formatDateTime } from "@/lib/formatters";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
+import {
+  getDefaultDepositExpirationValue,
+  getDepositExpirationValidationMessage,
+} from "./deposit-helpers";
 
 const ACCOUNT_QUERY = `
   query DepositAccount($id: ID!) {
@@ -40,8 +44,8 @@ const DEPOSITS_QUERY = `
 `;
 
 const CREATE_DEPOSIT_MUTATION = `
-  mutation CreateDeposit($amount: Float!, $comment: String) {
-    CreateDeposit(amount: $amount, comment: $comment) {
+  mutation CreateDeposit($amount: Float!, $comment: String, $expiresDate: String) {
+    CreateDeposit(amount: $amount, comment: $comment, expiresDate: $expiresDate) {
       id
       accountId
       correlationID
@@ -58,13 +62,23 @@ const CREATE_DEPOSIT_MUTATION = `
   }
 `;
 
+const CANCEL_LATEST_DEPOSIT_MUTATION = `
+  mutation CancelLatestDeposit {
+    CancelLatestDeposit {
+      id
+      status
+      expiredAt
+    }
+  }
+`;
+
 type Account = {
   id: string;
   holderName: string;
   balance: number | null;
 };
 
-type DepositStatus = "PENDING" | "COMPLETED" | "EXPIRED";
+type DepositStatus = "PENDING" | "COMPLETED" | "EXPIRED" | "CANCELED";
 
 type Deposit = {
   id: string;
@@ -84,6 +98,7 @@ type Deposit = {
 function getDepositStatusLabel(status: DepositStatus) {
   if (status === "COMPLETED") return "Confirmado";
   if (status === "EXPIRED") return "Expirado";
+  if (status === "CANCELED") return "Cancelado";
   return "Aguardando pagamento";
 }
 
@@ -93,9 +108,14 @@ export default function DepositPage() {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [depositsTotalCount, setDepositsTotalCount] = useState(0);
   const [depositAmount, setDepositAmount] = useState("100");
+  const [depositExpiresAt, setDepositExpiresAt] = useState(() =>
+    getDefaultDepositExpirationValue(new Date()),
+  );
   const [loading, setLoading] = useState(true);
   const [depositLoading, setDepositLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackTone, setFeedbackTone] = useState<"error" | "success">("success");
 
   const loadDepositData = useCallback(async () => {
     if (!user?.accountId) {
@@ -119,6 +139,7 @@ export default function DepositPage() {
       setDeposits(depositsData.myDeposits ?? []);
       setDepositsTotalCount(depositsData.myDepositsCount ?? 0);
     } catch (err) {
+      setFeedbackTone("error");
       setFeedback(err instanceof Error ? err.message : "Falha ao carregar depositos");
     } finally {
       setLoading(false);
@@ -151,7 +172,19 @@ export default function DepositPage() {
     const amount = Number(depositAmount);
 
     if (!Number.isFinite(amount) || amount <= 0) {
+      setFeedbackTone("error");
       setFeedback("Informe um valor de deposito valido.");
+      return;
+    }
+
+    const expirationValidationMessage = getDepositExpirationValidationMessage(
+      depositExpiresAt,
+      new Date(),
+    );
+
+    if (expirationValidationMessage) {
+      setFeedbackTone("error");
+      setFeedback(expirationValidationMessage);
       return;
     }
 
@@ -159,13 +192,36 @@ export default function DepositPage() {
     setFeedback(null);
 
     try {
-      await graphqlRequest(CREATE_DEPOSIT_MUTATION, { amount });
+      await graphqlRequest(CREATE_DEPOSIT_MUTATION, {
+        amount,
+        expiresDate: new Date(depositExpiresAt).toISOString(),
+      });
+      setFeedbackTone("success");
       setFeedback("Deposito Pix gerado com sucesso.");
+      setDepositExpiresAt(getDefaultDepositExpirationValue(new Date()));
       await loadDepositData();
     } catch (err) {
+      setFeedbackTone("error");
       setFeedback(err instanceof Error ? err.message : "Falha ao gerar deposito");
     } finally {
       setDepositLoading(false);
+    }
+  }
+
+  async function handleCancelLatestDeposit() {
+    setCancelLoading(true);
+    setFeedback(null);
+
+    try {
+      await graphqlRequest(CANCEL_LATEST_DEPOSIT_MUTATION, {});
+      setFeedbackTone("success");
+      setFeedback("Ultimo deposito cancelado com sucesso.");
+      await loadDepositData();
+    } catch (err) {
+      setFeedbackTone("error");
+      setFeedback(err instanceof Error ? err.message : "Falha ao cancelar deposito");
+    } finally {
+      setCancelLoading(false);
     }
   }
 
@@ -191,7 +247,8 @@ export default function DepositPage() {
               <Badge variant="outline">Pix apenas</Badge>
             </div>
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-              Gere uma cobranca Pix, copie o BR Code e acompanhe as confirmacoes do seu deposito em uma tela exclusiva.
+              Gere uma cobranca Pix, defina o vencimento, copie o BR Code e acompanhe as
+              confirmacoes em uma tela exclusiva.
             </p>
           </div>
           <div className="grid min-w-56 gap-3 rounded-[20px] border border-border/70 bg-background/80 px-4 py-3">
@@ -217,7 +274,8 @@ export default function DepositPage() {
             <div className="space-y-2">
               <h2 className="text-lg font-semibold text-foreground">Gerar novo deposito</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                No momento, a entrada de saldo acontece apenas por Pix. Informe o valor para gerar um novo QR Code.
+                No momento, a entrada de saldo acontece apenas por Pix. Informe o valor e o
+                vencimento para gerar um novo QR Code.
               </p>
             </div>
           </div>
@@ -234,14 +292,35 @@ export default function DepositPage() {
               />
             </label>
 
+            <label className="space-y-2 text-sm font-medium">
+              <span>Vencimento</span>
+              <Input
+                type="datetime-local"
+                value={depositExpiresAt}
+                onChange={(event) => setDepositExpiresAt(event.target.value)}
+              />
+              <p className="text-xs leading-5 text-muted-foreground">
+                O vencimento minimo aceito e de 5 minutos a partir de agora.
+              </p>
+            </label>
+
             {feedback ? (
-              <p className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm text-foreground">
+              <p
+                className={
+                  feedbackTone === "error"
+                    ? "rounded-2xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+                    : "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                }
+              >
                 {feedback}
               </p>
             ) : null}
 
             <div className="flex justify-end">
-              <Button onClick={() => void handleCreateDeposit()} disabled={depositLoading || loading}>
+              <Button
+                onClick={() => void handleCreateDeposit()}
+                disabled={depositLoading || cancelLoading || loading}
+              >
                 {depositLoading ? "Gerando..." : "Gerar deposito Pix"}
               </Button>
             </div>
@@ -256,7 +335,8 @@ export default function DepositPage() {
             <div className="space-y-2">
               <h2 className="text-lg font-semibold text-foreground">Ultimo deposito gerado</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                O QR Code mais recente fica em destaque para acelerar copia, leitura e acompanhamento.
+                O QR Code mais recente fica em destaque para acelerar copia, leitura e
+                acompanhamento.
               </p>
             </div>
           </div>
@@ -279,6 +359,11 @@ export default function DepositPage() {
                   <p className="mt-3 text-sm text-foreground">
                     Valor solicitado: <strong>{formatBalance(latestDeposit.requestedAmount)}</strong>
                   </p>
+                  {latestDeposit.expiresDate ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Vencimento: <strong>{formatDateTime(latestDeposit.expiresDate)}</strong>
+                    </p>
+                  ) : null}
                   {latestDeposit.paidAmount ? (
                     <p className="mt-2 text-sm text-emerald-700">
                       Valor confirmado: <strong>{formatBalance(latestDeposit.paidAmount)}</strong>
@@ -286,7 +371,18 @@ export default function DepositPage() {
                   ) : null}
                 </div>
 
-                {latestDeposit.brCode ? (
+                {latestDeposit.status === "PENDING" ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => void handleCancelLatestDeposit()}
+                    disabled={cancelLoading}
+                  >
+                    {cancelLoading ? "Cancelando..." : "Cancelar ultimo deposito"}
+                  </Button>
+                ) : null}
+
+                {latestDeposit.brCode && latestDeposit.status === "PENDING" ? (
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                       BR Code
@@ -309,12 +405,16 @@ export default function DepositPage() {
               </div>
 
               <div className="flex items-center justify-center rounded-[20px] border border-dashed border-border bg-card/80 p-4">
-                {latestDeposit.qrCodeImage ? (
+                {latestDeposit.qrCodeImage && latestDeposit.status === "PENDING" ? (
                   <img
                     src={latestDeposit.qrCodeImage}
                     alt="QR Code do deposito"
                     className="h-52 w-52 rounded-xl object-contain"
                   />
+                ) : latestDeposit.status === "CANCELED" ? (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Este deposito foi cancelado. Gere um novo Pix para continuar.
+                  </p>
                 ) : (
                   <p className="text-center text-sm text-muted-foreground">
                     QR Code indisponivel para este deposito.
@@ -358,6 +458,11 @@ export default function DepositPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       CorrelationID: {deposit.correlationID}
                     </p>
+                    {deposit.expiresDate ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Vencimento: {formatDateTime(deposit.expiresDate)}
+                      </p>
+                    ) : null}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {formatDateTime(deposit.createdAt)}

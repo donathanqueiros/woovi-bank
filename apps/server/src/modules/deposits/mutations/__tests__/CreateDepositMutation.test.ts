@@ -74,6 +74,27 @@ describe("CreateDeposit mutation", () => {
     expect(result.errors?.[0]?.message).toContain("Valor deve ser maior que zero");
   });
 
+  it("retorna erro quando o vencimento informado e invalido", async () => {
+    const result = await executeGraphQL(
+      `
+      mutation {
+        CreateDeposit(amount: 50, expiresDate: "data-invalida") {
+          id
+        }
+      }
+    `,
+      {
+        auth: {
+          userId: "user-1",
+          role: "USER",
+        },
+      },
+    );
+
+    expect(result.errors).toBeDefined();
+    expect(result.errors?.[0]?.message).toContain("Vencimento do deposito invalido");
+  });
+
   it("retorna erro quando conta do usuario esta inativa", async () => {
     AccountModel.findOne.mockResolvedValue(
       createAccountDocument({ id: "account-1", userId: "user-1", active: false }),
@@ -142,7 +163,11 @@ describe("CreateDeposit mutation", () => {
     const result = await executeGraphQL(
       `
       mutation {
-        CreateDeposit(amount: 120, comment: "Top up") {
+        CreateDeposit(
+          amount: 120
+          comment: "Top up"
+          expiresDate: "2099-03-20T12:00:00.000Z"
+        ) {
           id
           accountId
           correlationID
@@ -167,6 +192,7 @@ describe("CreateDeposit mutation", () => {
       expect.objectContaining({
         value: 12000,
         comment: "Top up",
+        expiresDate: "2099-03-20T12:00:00.000Z",
       }),
     );
     expect(DepositRequestModel).toHaveBeenCalledWith(

@@ -16,6 +16,7 @@ const envRoot =
 const root = (...segments: string[]) => path.resolve(envRoot, ...segments);
 
 dotenvSafe.config({
+  path: root(".env"),
   sample: root(".env.example"),
 });
 

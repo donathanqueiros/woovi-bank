@@ -29,6 +29,7 @@ type ChargeExpiredPayload = {
 export type ChargeCompletedHandlingResult =
   | "processed"
   | "already-completed"
+  | "already-closed"
   | "not-found";
 
 export type ChargeExpiredHandlingResult = "expired" | "already-expired" | "not-found";
@@ -94,6 +95,10 @@ export async function handleWooviChargeCompletedEvent(
 
   if (depositRequest.status === "COMPLETED") {
     return "already-completed";
+  }
+
+  if (depositRequest.status === "EXPIRED" || depositRequest.status === "CANCELED") {
+    return "already-closed";
   }
 
   const paidAmount = parsePaidAmount(payload);
@@ -219,7 +224,11 @@ export async function handleWooviChargeExpiredEvent(
     return "not-found";
   }
 
-  if (depositRequest.status === "EXPIRED" || depositRequest.status === "COMPLETED") {
+  if (
+    depositRequest.status === "EXPIRED" ||
+    depositRequest.status === "COMPLETED" ||
+    depositRequest.status === "CANCELED"
+  ) {
     return "already-expired";
   }
 

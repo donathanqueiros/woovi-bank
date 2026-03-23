@@ -1,6 +1,10 @@
 import { model, Schema, Types } from "mongoose";
 
-export type DepositRequestStatus = "PENDING" | "COMPLETED" | "EXPIRED";
+export type DepositRequestStatus =
+  | "PENDING"
+  | "COMPLETED"
+  | "EXPIRED"
+  | "CANCELED";
 
 export type WooviChargeData = {
   brCode?: string;
@@ -28,7 +32,7 @@ const depositRequestSchema = new Schema<IDepositRequest>({
   paidAmount: { type: Number },
   status: {
     type: String,
-    enum: ["PENDING", "COMPLETED", "EXPIRED"],
+    enum: ["PENDING", "COMPLETED", "EXPIRED", "CANCELED"],
     required: true,
     default: "PENDING",
     index: true,

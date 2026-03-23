@@ -54,10 +54,15 @@ export const CreateDepositMutation = {
   args: {
     amount: { type: new GraphQLNonNull(GraphQLFloat) },
     comment: { type: GraphQLString },
+    expiresDate: { type: GraphQLString },
   },
   resolve: async (
     _source: unknown,
-    { amount, comment }: { amount: number; comment?: string },
+    {
+      amount,
+      comment,
+      expiresDate,
+    }: { amount: number; comment?: string; expiresDate?: string },
     context: GraphQLContext,
   ) => {
     if (!context.auth) {
@@ -66,6 +71,22 @@ export const CreateDepositMutation = {
 
     if (amount <= 0) {
       throw new Error("Valor deve ser maior que zero");
+    }
+
+    let normalizedExpiresDate: string | undefined;
+
+    if (expiresDate) {
+      const parsedExpiration = new Date(expiresDate);
+      const minimumExpiration = Date.now() + 5 * 60 * 1000;
+
+      if (
+        Number.isNaN(parsedExpiration.getTime()) ||
+        parsedExpiration.getTime() < minimumExpiration
+      ) {
+        throw new Error("Vencimento do deposito invalido");
+      }
+
+      normalizedExpiresDate = parsedExpiration.toISOString();
     }
 
     const account = await Account.findOne({ userId: context.auth.userId });
@@ -92,6 +113,7 @@ export const CreateDepositMutation = {
           taxID: "12345678909",
         },
         ...(comment?.trim() ? { comment: comment.trim() } : {}),
+        ...(normalizedExpiresDate ? { expiresDate: normalizedExpiresDate } : {}),
       });
     } catch (error) {
       throw normalizeUnknownError(error);
