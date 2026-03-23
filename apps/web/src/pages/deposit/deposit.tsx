@@ -95,6 +95,8 @@ type Deposit = {
   expiredAt?: string | null;
 };
 
+const QUICK_DEPOSIT_AMOUNTS = ["50", "100", "200", "500"] as const;
+
 function getDepositStatusLabel(status: DepositStatus) {
   if (status === "COMPLETED") return "Confirmado";
   if (status === "EXPIRED") return "Expirado";
@@ -235,23 +237,23 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[24px] border border-border/70 bg-card px-6 py-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="space-y-4 md:space-y-6">
+      <section className="rounded-[24px] border border-border/70 bg-card px-4 py-5 sm:px-6 sm:py-6">
+        <div className="flex flex-col items-start gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
             <Badge variant="secondary" className="rounded-full px-3 py-1">
               Deposito dedicado
             </Badge>
             <div className="flex flex-wrap items-center gap-2">
-              <h1>Deposito Pix</h1>
+              <h1 className="text-2xl font-semibold tracking-[-0.02em]">Deposito Pix</h1>
               <Badge variant="outline">Pix apenas</Badge>
             </div>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-              Gere uma cobranca Pix, defina o vencimento, copie o BR Code e acompanhe as
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
+              Gere uma cobranca Pix, defina o vencimento, copie o Pix QR Code e acompanhe as
               confirmacoes em uma tela exclusiva.
             </p>
           </div>
-          <div className="grid min-w-56 gap-3 rounded-[20px] border border-border/70 bg-background/80 px-4 py-3">
+          <div className="grid w-full gap-2 rounded-[20px] border border-border/70 bg-background/80 px-4 py-3 sm:max-w-72">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               Saldo da conta
             </p>
@@ -265,8 +267,8 @@ export default function DepositPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <article className="rounded-[24px] border border-border/70 bg-card p-6">
+      <section className="grid gap-4 lg:gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <article className="rounded-[24px] border border-border/70 bg-card p-4 sm:p-6">
           <div className="flex items-start gap-3">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Wallet className="size-5" />
@@ -280,7 +282,7 @@ export default function DepositPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4">
+          <div className="mt-5 grid gap-4 sm:mt-6">
             <label className="space-y-2 text-sm font-medium">
               <span>Valor do deposito</span>
               <Input
@@ -291,6 +293,20 @@ export default function DepositPage() {
                 onChange={(event) => setDepositAmount(event.target.value)}
               />
             </label>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_DEPOSIT_AMOUNTS.map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={depositAmount === value ? "default" : "outline"}
+                  size="sm"
+                  className="min-w-16"
+                  onClick={() => setDepositAmount(value)}
+                >
+                  R$ {value}
+                </Button>
+              ))}
+            </div>
 
             <label className="space-y-2 text-sm font-medium">
               <span>Vencimento</span>
@@ -316,10 +332,11 @@ export default function DepositPage() {
               </p>
             ) : null}
 
-            <div className="flex justify-end">
+            <div className="flex justify-stretch sm:justify-end">
               <Button
                 onClick={() => void handleCreateDeposit()}
                 disabled={depositLoading || cancelLoading || loading}
+                className="w-full sm:w-auto"
               >
                 {depositLoading ? "Gerando..." : "Gerar deposito Pix"}
               </Button>
@@ -327,7 +344,7 @@ export default function DepositPage() {
           </div>
         </article>
 
-        <article className="rounded-[24px] border border-border/70 bg-card p-6">
+        <article className="rounded-[24px] border border-border/70 bg-card p-4 sm:p-6">
           <div className="flex items-start gap-3">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground">
               <QrCode className="size-5" />
@@ -346,8 +363,8 @@ export default function DepositPage() {
               Carregando dados de deposito...
             </div>
           ) : latestDeposit ? (
-            <div className="mt-6 grid gap-4 rounded-[22px] border border-border/70 bg-background/80 p-4 md:grid-cols-2">
-              <div className="space-y-4">
+            <div className="mt-5 grid gap-4 rounded-[22px] border border-border/70 bg-background/80 p-4 md:mt-6 md:grid-cols-[1.1fr_0.9fr]">
+              <div className="order-2 space-y-4 md:order-1">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{getDepositStatusLabel(latestDeposit.status)}</Badge>
@@ -385,16 +402,17 @@ export default function DepositPage() {
                 {latestDeposit.brCode && latestDeposit.status === "PENDING" ? (
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                      BR Code
+                      Pix QR Code
                     </p>
                     <textarea
-                      className="h-28 w-full rounded-xl border border-border/70 bg-card px-3 py-2 text-xs text-foreground"
+                      className="h-28 w-full rounded-xl border border-border/70 bg-card px-3 py-2 font-mono text-xs text-foreground"
                       value={latestDeposit.brCode}
                       readOnly
                     />
                     <Button
                       variant="outline"
                       size="sm"
+                      className="w-full sm:w-auto"
                       onClick={() => void handleCopyBrCode(latestDeposit.brCode ?? "")}
                     >
                       <Copy className="size-4" />
@@ -404,12 +422,12 @@ export default function DepositPage() {
                 ) : null}
               </div>
 
-              <div className="flex items-center justify-center rounded-[20px] border border-dashed border-border bg-card/80 p-4">
+              <div className="order-1 flex items-center justify-center rounded-[20px] border border-dashed border-border bg-card/80 p-4 md:order-2">
                 {latestDeposit.qrCodeImage && latestDeposit.status === "PENDING" ? (
                   <img
                     src={latestDeposit.qrCodeImage}
                     alt="QR Code do deposito"
-                    className="h-52 w-52 rounded-xl object-contain"
+                    className="h-52 w-52 max-w-full rounded-xl object-contain sm:h-56 sm:w-56"
                   />
                 ) : latestDeposit.status === "CANCELED" ? (
                   <p className="text-center text-sm text-muted-foreground">
@@ -430,7 +448,7 @@ export default function DepositPage() {
         </article>
       </section>
 
-      <section className="rounded-[24px] border border-border/70 bg-card p-6">
+      <section className="rounded-[24px] border border-border/70 bg-card p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Historico recente</h2>
@@ -441,21 +459,21 @@ export default function DepositPage() {
         </div>
 
         {deposits.length > 0 ? (
-          <ul className="mt-6 space-y-3">
+          <ul className="mt-5 space-y-3 sm:mt-6">
             {deposits.map((deposit) => (
               <li
                 key={deposit.id}
                 className="rounded-[20px] border border-border/70 bg-background/80 px-4 py-4"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold text-foreground">
                         {formatBalance(deposit.requestedAmount)}
                       </p>
                       <Badge variant="outline">{getDepositStatusLabel(deposit.status)}</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
                       CorrelationID: {deposit.correlationID}
                     </p>
                     {deposit.expiresDate ? (
@@ -464,7 +482,7 @@ export default function DepositPage() {
                       </p>
                     ) : null}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground sm:text-right">
                     {formatDateTime(deposit.createdAt)}
                   </p>
                 </div>

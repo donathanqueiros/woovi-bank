@@ -34,7 +34,7 @@ import { getTransferValidationMessage } from "@/lib/transfer-validation";
 import { cn } from "@/lib/utils";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
-import type { accountsQuery } from "./__generated__/accountsQuery.graphql";
+import type { accountsQuery } from "../__generated__/accountsQuery.graphql";
 
 const PAGE_SIZE = 10;
 
@@ -831,7 +831,7 @@ export default function AccountsPage() {
                   ) : null}
                   {latestDeposit.brCode ? (
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-600">BR Code</p>
+                      <p className="text-xs text-slate-600">Pix QR Code</p>
                       <textarea
                         className="h-24 w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs"
                         value={latestDeposit.brCode}

@@ -1,9 +1,9 @@
 import AuthPage from "@/pages/auth";
-import KycPage from "@/pages/kyc";
 import { Navigate } from "react-router";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useAuth } from "@/lib/use-auth";
 import { KYC_ROUTE } from "@/pages/kyc/kyc-access";
+import KycPage from "@/pages/kyc/kyc";
 
 export function ProtectedDashboardLayout() {
   const { isAuthenticated, isBootstrapping } = useAuth();

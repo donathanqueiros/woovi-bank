@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   getDefaultDepositExpirationValue,
   getDepositExpirationValidationMessage,
-} from "./deposit-helpers.ts";
+} from "../deposit-helpers.ts";
 
 test("uses a default expiration 24 hours ahead in local datetime format", () => {
   assert.equal(

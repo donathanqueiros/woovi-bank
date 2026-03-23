@@ -10,11 +10,11 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StepIndicator } from "@/components/kyc/step-indicator";
-import { PersonalInfoStep } from "./kyc/PersonalInfoStep";
-import { AddressStep } from "./kyc/AddressStep";
-import { IdentityStep } from "./kyc/IdentityStep";
-import { SelfieStep } from "./kyc/SelfieStep";
-import { ReviewStep } from "./kyc/ReviewStep";
+import { PersonalInfoStep } from "./PersonalInfoStep";
+import { AddressStep } from "./AddressStep";
+import { IdentityStep } from "./IdentityStep";
+import { SelfieStep } from "./SelfieStep";
+import { ReviewStep } from "./ReviewStep";
 import {
   kycSchema,
   personalInfoSchema,
@@ -23,11 +23,11 @@ import {
   selfieSchema,
   reviewSchema,
   type KycFormData,
-} from "./kyc/kyc-schemas";
-import { serializeKycDraft } from "./kyc/kyc-draft";
+} from "./kyc-schemas";
+import { serializeKycDraft } from "./kyc-draft";
 import { graphqlRequest } from "@/lib/graphqlClient";
 import { useAuth } from "@/lib/use-auth";
-import { getKycActionCopy, getKycPageMode, KYC_ROUTE } from "./kyc/kyc-access";
+import { getKycActionCopy, getKycPageMode, KYC_ROUTE } from "./kyc-access";
 import type { KycStatus } from "@/lib/auth-storage";
 
 const DRAFT_KEY = "kyc-draft";
